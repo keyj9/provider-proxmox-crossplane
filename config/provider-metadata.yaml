@@ -1,0 +1,11 @@
+apiVersion: provider.crossplane.io/v1alpha1
+kind: ProviderConfig
+metadata:
+  name: provider-proxmox
+spec:
+  credentials:
+    source: Secret
+    secretRef:
+      namespace: crossplane-system
+      name: proxmox-credentials
+      key: credentials
