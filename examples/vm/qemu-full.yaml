@@ -1,0 +1,34 @@
+apiVersion: compute.proxmox.crossplane.io/v1alpha1
+kind: VirtualMachine
+metadata:
+  name: example-vm-full
+spec:
+  forProvider:
+    targetNode: "pve"
+    name: "test-vm-full"
+    vmid: 100
+    memory: 4096
+    cores: 2
+    sockets: 1
+    cpu: "host"
+    scsihw: "virtio-scsi-pci"
+    onboot: true
+    disk:
+      - storage: "local-lvm"
+        size: 32
+        type: "scsi"
+        format: "raw"
+        ssd: true
+    network:
+      - model: "virtio"
+        bridge: "vmbr0"
+        tag: 10
+    ide2:
+      - cdrom:
+          - iso: "local:iso/ubuntu-22.04-live-server-amd64.iso"
+    cloudinit:
+      - storage: "local-lvm"
+        ipconfig0: "ip=dhcp"
+        sshkeys: "ssh-rsa AAAA..."
+  providerConfigRef:
+    name: default 

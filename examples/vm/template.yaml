@@ -1,0 +1,35 @@
+apiVersion: compute.proxmox.crossplane.io/v1alpha1
+kind: VirtualMachine
+metadata:
+  name: ubuntu-template
+spec:
+  forProvider:
+    targetNode: "pve"
+    name: "ubuntu-2204-template"
+    vmid: 9000
+    memory: 2048
+    cores: 2
+    cpu: "host"
+    scsihw: "virtio-scsi-pci"
+    onboot: false
+    template: true
+    disk:
+      - storage: "local-lvm"
+        size: 32
+        type: "scsi"
+        format: "qcow2"
+        iothread: 1
+    network:
+      - model: "virtio"
+        bridge: "vmbr0"
+    ide2:
+      - cdrom:
+          - iso: "local:iso/ubuntu-22.04-live-server-amd64.iso"
+    cloudinit:
+      - storage: "local-lvm"
+        user: "ubuntu"
+        password: "ubuntu"
+        searchdomain: "example.com"
+        nameserver: "8.8.8.8"
+  providerConfigRef:
+    name: default 

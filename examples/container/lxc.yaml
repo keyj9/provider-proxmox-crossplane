@@ -1,0 +1,16 @@
+apiVersion: compute.proxmox.crossplane.io/v1alpha1
+kind: Container
+metadata:
+  name: example-lxc
+spec:
+  forProvider:
+    targetNode: "pve"
+    hostname: "test-container"
+    ostemplate: "local:vztmpl/ubuntu-20.04-standard_20.04-1_amd64.tar.gz"
+    memory: 512
+    swap: 512
+    rootfs:
+      storage: "local-lvm"
+      size: 8
+  providerConfigRef:
+    name: default 

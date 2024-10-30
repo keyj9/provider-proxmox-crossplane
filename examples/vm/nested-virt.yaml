@@ -1,0 +1,27 @@
+apiVersion: compute.proxmox.crossplane.io/v1alpha1
+kind: VirtualMachine
+metadata:
+  name: nested-vm-host
+spec:
+  forProvider:
+    targetNode: "pve"
+    name: "nested-hypervisor"
+    memory: 16384
+    cores: 4
+    cpu: "host"
+    flags:
+      - "+nested-hv"
+    disk:
+      - storage: "local-lvm"
+        size: 100
+        type: "virtio"
+        cache: "writeback"
+        iothread: 1
+    network:
+      - model: "virtio"
+        bridge: "vmbr0"
+        queues: 4
+    numa: true
+    sockets: 2
+  providerConfigRef:
+    name: default 

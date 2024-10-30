@@ -1,0 +1,36 @@
+apiVersion: compute.proxmox.crossplane.io/v1alpha1
+kind: VirtualMachine
+metadata:
+  name: ceph-ha-db
+spec:
+  forProvider:
+    targetNode: "pve-site1"
+    name: "postgres-primary"
+    hastate: "started"
+    hagroup: "db-cluster"
+    memory: 16384
+    cores: 8
+    sockets: 2
+    disk:
+      - storage: "ceph-pool1"
+        size: 100
+        type: "scsi"
+        backup: true
+        replicate: 1
+        iothread: 1
+      - storage: "ceph-pool1"
+        size: 200
+        type: "scsi"
+        format: "raw"
+        backup: true
+        replicate: 1
+    network:
+      - model: "virtio"
+        bridge: "vmbr0"
+        tag: 20
+    onboot: true
+    startup:
+      order: 1
+      up: 60
+  providerConfigRef:
+    name: default 

@@ -1,0 +1,18 @@
+apiVersion: storage.proxmox.crossplane.io/v1alpha1
+kind: Storage
+metadata:
+  name: ceph-basic
+spec:
+  forProvider:
+    storage: "ceph-pool1"
+    type: "rbd"
+    monhost: "ceph-mon1,ceph-mon2,ceph-mon3"
+    pool: "vm-pool"
+    username: "admin"
+    content:
+      - images
+      - rootdir
+    krbd: true
+    nodes: ["pve1", "pve2", "pve3"]
+  providerConfigRef:
+    name: default 

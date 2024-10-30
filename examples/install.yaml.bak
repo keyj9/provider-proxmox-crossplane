@@ -1,6 +1,0 @@
-apiVersion: pkg.crossplane.io/v1
-kind: Provider
-metadata:
-  name: provider-proxmox
-spec:
-  package: upbound/provider-proxmox:v0.1.0

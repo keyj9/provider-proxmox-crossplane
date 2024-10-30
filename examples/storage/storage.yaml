@@ -1,0 +1,17 @@
+apiVersion: storage.proxmox.crossplane.io/v1alpha1
+kind: Storage
+metadata:
+  name: example-storage
+spec:
+  forProvider:
+    storage: "example-nfs"
+    type: "nfs"
+    server: "nas.example.com"
+    export: "/mnt/storage"
+    contentTypes:
+      - "images"
+      - "iso"
+    nodes:
+      - "pve"
+  providerConfigRef:
+    name: default 

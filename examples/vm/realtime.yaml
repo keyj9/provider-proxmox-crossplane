@@ -1,0 +1,32 @@
+apiVersion: compute.proxmox.crossplane.io/v1alpha1
+kind: VirtualMachine
+metadata:
+  name: realtime-vm
+spec:
+  forProvider:
+    targetNode: "pve"
+    name: "low-latency-worker"
+    memory: 16384
+    cores: 8
+    cpu: "host"
+    sockets: 2
+    numa: true
+    scsihw: "virtio-scsi-single"
+    disk:
+      - storage: "local-lvm"
+        size: 50
+        type: "scsi"
+        iothread: 1
+        asyncio: "native"
+        cache: "none"
+        ssd: true
+    network:
+      - model: "virtio"
+        bridge: "vmbr0"
+        queues: 8
+    args: "-cpu host,+tsc-deadline,+invtsc"
+    machine: "q35"
+    kvm: true
+    rebootRequired: true
+  providerConfigRef:
+    name: default 

@@ -1,0 +1,32 @@
+apiVersion: compute.proxmox.crossplane.io/v1alpha1
+kind: VirtualMachine
+metadata:
+  name: windows-vm
+spec:
+  forProvider:
+    targetNode: "pve"
+    name: "win-server"
+    memory: 8192
+    cores: 4
+    cpu: "host"
+    ostype: "win11"
+    agent: 1
+    disk:
+      - storage: "local-lvm"
+        size: 120
+        type: "virtio"
+        format: "raw"
+        cache: "writeback"
+    network:
+      - model: "virtio"
+        bridge: "vmbr0"
+    ide2:
+      - cdrom:
+          - iso: "local:iso/windows-server-2022.iso"
+    vga:
+      type: "qxl"
+      memory: 32
+    tablet: true
+    bootdisk: "scsi0"
+  providerConfigRef:
+    name: default 

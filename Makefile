@@ -7,13 +7,17 @@ PROJECT_REPO ?= github.com/joekky/$(PROJECT_NAME)
 export TERRAFORM_VERSION ?= 1.5.7
 TERRAFORM_VERSION_VALID := $(shell [ "$(TERRAFORM_VERSION)" = "`printf "$(TERRAFORM_VERSION)\n1.6" | sort -V | head -n1`" ] && echo 1 || echo 0)
 
-export TERRAFORM_PROVIDER_SOURCE ?= joekky/proxmox
+export TERRAFORM_PROVIDER_SOURCE ?= registry.terraform.io/joekky/proxmox
 export TERRAFORM_PROVIDER_REPO ?= https://github.com/joekky/terraform-provider-proxmox
-export TERRAFORM_PROVIDER_VERSION ?= 2.9.14
+export TERRAFORM_PROVIDER_VERSION ?= main
 export TERRAFORM_PROVIDER_DOWNLOAD_NAME ?= terraform-provider-proxmox
-export TERRAFORM_PROVIDER_DOWNLOAD_URL_PREFIX ?= https://github.com/joekky/terraform-provider-proxmox/releases/download/v$(TERRAFORM_PROVIDER_VERSION)
-export TERRAFORM_NATIVE_PROVIDER_BINARY ?= terraform-provider-proxmox_v$(TERRAFORM_PROVIDER_VERSION)
-export TERRAFORM_DOCS_PATH ?= docs/resources
+export TERRAFORM_PROVIDER_BINARY ?= $(TOOLS_HOST_DIR)/$(TERRAFORM_PROVIDER_DOWNLOAD_NAME)
+export TERRAFORM_WORKDIR ?= $(TOOLS_HOST_DIR)/terraform-workdir
+
+export TERRAFORM_NATIVE_PROVIDER_BINARY ?= terraform-provider-proxmox
+export TERRAFORM_DOCS_PATH ?= docs
+export TERRAFORM_LOCAL_PROVIDER_VERSION ?= 0.0.1
+export TERRAFORM_PROVIDER_FILENAME := terraform-provider-proxmox_v$(TERRAFORM_LOCAL_PROVIDER_VERSION)
 
 PLATFORMS ?= linux_amd64 linux_arm64
 
@@ -103,7 +107,7 @@ TERRAFORM_PROVIDER_SCHEMA := config/schema.json
 
 check-terraform-version:
 ifneq ($(TERRAFORM_VERSION_VALID),1)
-	$(error invalid TERRAFORM_VERSION $(TERRAFORM_VERSION), must be less than 1.6.0 since that version introduced a not permitted BSL license))
+	$(error invalid TERRAFORM_VERSION $(TERRAFORM_VERSION), must be less than 1.6.0 since that version introduced a not permitted BSL license)
 endif
 
 $(TERRAFORM): $(TOOLS_HOST_DIR) check-terraform-version
@@ -115,38 +119,49 @@ $(TERRAFORM): $(TOOLS_HOST_DIR) check-terraform-version
 	@rm -fr $(TOOLS_HOST_DIR)/tmp-terraform
 	@$(OK) installing terraform $(HOSTOS)-$(HOSTARCH)
 
-$(TERRAFORM_PROVIDER_SCHEMA): $(TERRAFORM)
-	@$(INFO) generating provider schema for $(TERRAFORM_PROVIDER_SOURCE) $(TERRAFORM_PROVIDER_VERSION)
-	@mkdir -p $(TERRAFORM_WORKDIR)
-	@echo '{"terraform":[{"required_providers":[{"provider":{"source":"'"$(TERRAFORM_PROVIDER_SOURCE)"'","version":"'"$(TERRAFORM_PROVIDER_VERSION)"'"}}],"required_version":"'"$(TERRAFORM_VERSION)"'"}]}' > $(TERRAFORM_WORKDIR)/main.tf.json
-	@$(TERRAFORM) -chdir=$(TERRAFORM_WORKDIR) init > $(TERRAFORM_WORKDIR)/terraform-logs.txt 2>&1
-	@$(TERRAFORM) -chdir=$(TERRAFORM_WORKDIR) providers schema -json=true > $(TERRAFORM_PROVIDER_SCHEMA) 2>> $(TERRAFORM_WORKDIR)/terraform-logs.txt
-	@$(OK) generating provider schema for $(TERRAFORM_PROVIDER_SOURCE) $(TERRAFORM_PROVIDER_VERSION)
+$(TERRAFORM_PROVIDER_BINARY):
+	@$(INFO) building terraform provider from source
+	@mkdir -p $(TOOLS_HOST_DIR)
+	@git clone --depth 1 $(TERRAFORM_PROVIDER_REPO) $(TOOLS_HOST_DIR)/provider-source
+	@cd $(TOOLS_HOST_DIR)/provider-source && \
+		go mod download && \
+		go build -o $(TERRAFORM_PROVIDER_BINARY)
+	@rm -rf $(TOOLS_HOST_DIR)/provider-source
+	@$(OK) building terraform provider from source
 
+$(TERRAFORM_PROVIDER_SCHEMA): $(TERRAFORM) $(TERRAFORM_PROVIDER_BINARY)
+	@$(INFO) generating provider schema for $(TERRAFORM_PROVIDER_SOURCE)
+	@mkdir -p $(TERRAFORM_WORKDIR)
+	@echo '{"terraform":[{"required_providers":[{"provider":{"source":"'"$(TERRAFORM_PROVIDER_SOURCE)"'","version":"'"$(TERRAFORM_LOCAL_PROVIDER_VERSION)"'"}}]}]}' > $(TERRAFORM_WORKDIR)/main.tf.json
+	@mkdir -p $(TERRAFORM_WORKDIR)/.terraform/plugins/registry.terraform.io/joekky/proxmox/$(TERRAFORM_LOCAL_PROVIDER_VERSION)/$(HOSTOS)_$(HOSTARCH)
+	@cp $(TERRAFORM_PROVIDER_BINARY) $(TERRAFORM_WORKDIR)/.terraform/plugins/registry.terraform.io/joekky/proxmox/$(TERRAFORM_LOCAL_PROVIDER_VERSION)/$(HOSTOS)_$(HOSTARCH)/$(TERRAFORM_PROVIDER_FILENAME)
+	@$(TERRAFORM) -chdir=$(TERRAFORM_WORKDIR) init -plugin-dir=$(TERRAFORM_WORKDIR)/.terraform/plugins > $(TERRAFORM_WORKDIR)/terraform-logs.txt 2>&1
+	@$(TERRAFORM) -chdir=$(TERRAFORM_WORKDIR) providers schema -json > $(TERRAFORM_PROVIDER_SCHEMA) 2>> $(TERRAFORM_WORKDIR)/terraform-logs.txt
+	@$(OK) generating provider schema for $(TERRAFORM_PROVIDER_SOURCE)
+
+# Modified pull-docs target
 pull-docs:
 	@if [ ! -d "$(WORK_DIR)/$(TERRAFORM_PROVIDER_SOURCE)" ]; then \
-		mkdir -p "$(WORK_DIR)/$(TERRAFORM_PROVIDER_SOURCE)" && \
-		git clone -c advice.detachedHead=false --depth 1 --filter=blob:none --branch "v$(TERRAFORM_PROVIDER_VERSION)" --sparse "$(TERRAFORM_PROVIDER_REPO)" "$(WORK_DIR)/$(TERRAFORM_PROVIDER_SOURCE)"; \
-	fi
-	@git -C "$(WORK_DIR)/$(TERRAFORM_PROVIDER_SOURCE)" sparse-checkout set "$(TERRAFORM_DOCS_PATH)"
+				mkdir -p "$(WORK_DIR)/$(TERRAFORM_PROVIDER_SOURCE)" && \
+				git clone --depth 1 "$(TERRAFORM_PROVIDER_REPO)" "$(WORK_DIR)/$(TERRAFORM_PROVIDER_SOURCE)"; \
+		fi
+	@mkdir -p "$(WORK_DIR)/$(TERRAFORM_PROVIDER_SOURCE)/docs/data-sources"
+	@mkdir -p "$(WORK_DIR)/$(TERRAFORM_PROVIDER_SOURCE)/docs/resources"
+	@touch "$(WORK_DIR)/$(TERRAFORM_PROVIDER_SOURCE)/docs/data-sources/.gitkeep"
+	@touch "$(WORK_DIR)/$(TERRAFORM_PROVIDER_SOURCE)/docs/resources/.gitkeep"
 
-generate.init: $(TERRAFORM_PROVIDER_SCHEMA) pull-docs
+clean-schema:
+	@rm -f $(TERRAFORM_PROVIDER_SCHEMA)
+	@rm -rf $(TERRAFORM_WORKDIR)
 
-.PHONY: $(TERRAFORM_PROVIDER_SCHEMA) pull-docs check-terraform-version
+generate.init: clean-schema $(TERRAFORM_PROVIDER_SCHEMA) pull-docs
 
-# ====================================================================================
-# Targets
-
-generate: generate.init
-	@$(INFO) Generating code
-	@go generate ./...
-	@$(OK) Generating code
 
 submodules:
 	@git submodule sync
 	@git submodule update --init --recursive
 
-.PHONY: submodules fallthrough generate
+.PHONY: submodules fallthrough generate pull-docs
 
 # Add this after the includes section
 $(TOOLS_HOST_DIR):

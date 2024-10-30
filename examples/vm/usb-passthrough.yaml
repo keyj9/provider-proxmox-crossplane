@@ -1,0 +1,25 @@
+apiVersion: compute.proxmox.crossplane.io/v1alpha1
+kind: VirtualMachine
+metadata:
+  name: usb-vm
+spec:
+  forProvider:
+    targetNode: "pve"
+    name: "usb-workstation"
+    memory: 8192
+    cores: 4
+    cpu: "host"
+    usb:
+      - host: "0x046d:0xc52b"  # Logitech Webcam
+        usb3: true
+      - host: "0x0483:0x2016"  # USB Security Key
+    protection: true
+    onboot: true
+    ostype: "l26"  # Linux 2.6 - 6.X Kernel
+    disk:
+      - storage: "local-lvm"
+        size: 50
+        type: "scsi"
+    defineConnectionInfo: true
+  providerConfigRef:
+    name: default 

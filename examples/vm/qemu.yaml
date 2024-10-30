@@ -1,0 +1,20 @@
+apiVersion: compute.proxmox.crossplane.io/v1alpha1
+kind: VirtualMachine
+metadata:
+  name: example-vm
+spec:
+  forProvider:
+    targetNode: "pve"
+    name: "test-vm"
+    memory: 2048
+    cores: 2
+    sockets: 1
+    disk:
+      - storage: "local-lvm"
+        size: 32
+        type: "scsi"
+    network:
+      - model: "virtio"
+        bridge: "vmbr0"
+  providerConfigRef:
+    name: default 

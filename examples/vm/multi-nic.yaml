@@ -1,0 +1,32 @@
+apiVersion: compute.proxmox.crossplane.io/v1alpha1
+kind: VirtualMachine
+metadata:
+  name: multi-nic-vm
+spec:
+  forProvider:
+    targetNode: "pve"
+    name: "network-router"
+    memory: 4096
+    cores: 2
+    cpu: "host"
+    network:
+      - model: "virtio"
+        bridge: "vmbr0"
+        tag: 10
+        firewall: true
+        mtu: 9000
+      - model: "virtio"
+        bridge: "vmbr1"
+        tag: 20
+        rate: 1000
+      - model: "virtio"
+        bridge: "vmbr2"
+        vlan: true
+        trunks: "100-200"
+    ipconfig0: "ip=192.168.10.100/24,gw=192.168.10.1"
+    ipconfig1: "ip=192.168.20.100/24"
+    ipconfig2: "ip=dhcp"
+    searchdomain: "internal.example.com"
+    nameserver: "192.168.10.1"
+  providerConfigRef:
+    name: default 

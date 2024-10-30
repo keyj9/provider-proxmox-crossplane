@@ -1,0 +1,28 @@
+apiVersion: compute.proxmox.crossplane.io/v1alpha1
+kind: VirtualMachine
+metadata:
+  name: ha-vm
+spec:
+  forProvider:
+    targetNode: "pve1"
+    name: "ha-postgres"
+    hastate: "started"
+    hagroup: "db-ha"
+    memory: 8192
+    cores: 4
+    sockets: 2
+    disk:
+      - storage: "ceph-pool"
+        size: 100
+        type: "scsi"
+        backup: true
+    network:
+      - model: "virtio"
+        bridge: "vmbr0"
+        tag: 20
+    onboot: true
+    startup:
+      order: 1
+      up: 60
+  providerConfigRef:
+    name: default 

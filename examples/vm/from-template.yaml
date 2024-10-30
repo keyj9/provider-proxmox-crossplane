@@ -1,0 +1,20 @@
+apiVersion: compute.proxmox.crossplane.io/v1alpha1
+kind: VirtualMachine
+metadata:
+  name: vm-from-template
+spec:
+  forProvider:
+    targetNode: "pve"
+    name: "prod-vm-01"
+    clone: "ubuntu-2204-template"
+    cloneWait: 30
+    memory: 4096
+    cores: 4
+    disk:
+      - size: 64
+    cloudinit:
+      - ipconfig0: "ip=dhcp"
+        sshkeys: |
+          ssh-rsa AAAA...
+  providerConfigRef:
+    name: default 

@@ -1,0 +1,22 @@
+apiVersion: storage.proxmox.crossplane.io/v1alpha1
+kind: Storage
+metadata:
+  name: ceph-multisite
+spec:
+  forProvider:
+    storage: "ceph-replicated"
+    type: "rbd"
+    monhost: "site1-mon1,site1-mon2,site1-mon3;site2-mon1,site2-mon2,site2-mon3"
+    pool: "replicated-pool"
+    username: "admin"
+    content:
+      - images
+      - rootdir
+    krbd: true
+    maxProtectedTasks: 10
+    nodes: ["site1-pve1", "site1-pve2", "site2-pve1", "site2-pve2"]
+    options:
+      - "ms_cluster_connect_timeout=30"
+      - "ms_service_connect_timeout=30"
+  providerConfigRef:
+    name: default 

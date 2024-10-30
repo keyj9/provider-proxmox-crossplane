@@ -1,0 +1,27 @@
+apiVersion: compute.proxmox.crossplane.io/v1alpha1
+kind: VirtualMachine
+metadata:
+  name: gpu-vm
+spec:
+  forProvider:
+    targetNode: "pve"
+    name: "gpu-workstation"
+    memory: 16384
+    cores: 8
+    cpu: "host"
+    machine: "q35"
+    bios: "ovmf"
+    hostpci0: "0000:01:00.0"  # GPU PCI address
+    hostpci1: "0000:01:00.1"  # GPU audio device
+    disk:
+      - storage: "local-lvm"
+        size: 100
+        type: "virtio"
+        iothread: 1
+        discard: "on"
+    network:
+      - model: "virtio"
+        bridge: "vmbr0"
+    args: "-cpu 'host,+kvm_pv_unhalt,+kvm_pv_eoi,hv_vendor_id=proxmox'"
+  providerConfigRef:
+    name: default 
