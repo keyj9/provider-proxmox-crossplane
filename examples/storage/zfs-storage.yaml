@@ -1,0 +1,13 @@
+apiVersion: storage.proxmox.crossplane.io/v1alpha1
+kind: ZFSStorage
+metadata:
+  name: vm-storage
+spec:
+  forProvider:
+    node: "pve1"
+    pool: "tank"
+    compression: "lz4"
+    arc: "all"
+    thin: true
+  providerConfigRef:
+    name: default 
