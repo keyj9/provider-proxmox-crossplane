@@ -1,322 +1,95 @@
-name: CI
+name: Build and Push Provider
 
 on:
   push:
-    branches:
-      - main
-      - release-*
-  pull_request: {}
-  workflow_dispatch: {}
+    tags: ['v*']
+    branches: ['main', 'master', 'release-*']
+  pull_request:
+    branches: ['main', 'master', 'release-*']
 
 env:
-  # Common versions
-  GO_VERSION: '1.21'
-  GOLANGCI_VERSION: 'v1.54.0'
-  DOCKER_BUILDX_VERSION: 'v0.8.2'
-
-  # Common users. We can't run a step 'if secrets.XXX != ""' but we can run a
-  # step 'if env.XXX != ""', so we copy these to succinctly test whether
-  # credentials have been provided before trying to run steps that need them.
-  UPBOUND_MARKETPLACE_PUSH_ROBOT_USR: ${{ secrets.UPBOUND_MARKETPLACE_PUSH_ROBOT_USR }}
+  TERRAFORM_VERSION: "1.5.7"
+  TERRAFORM_PROVIDER_SOURCE: "registry.terraform.io/joekky/proxmox"
+  TERRAFORM_PROVIDER_VERSION: "0.1.0"
+  TERRAFORM_PROVIDER_REPO: "https://github.com/joekky/terraform-provider-proxmox"
 
 jobs:
-  detect-noop:
-    runs-on: ubuntu-24.04
-    outputs:
-      noop: ${{ steps.noop.outputs.should_skip }}
-    steps:
-      - name: Detect No-op Changes
-        id: noop
-        uses: fkirc/skip-duplicate-actions@v5.3.1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          paths_ignore: '["**.md", "**.png", "**.jpg"]'
-          do_not_skip: '["workflow_dispatch", "schedule", "push"]'
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
-  report-breaking-changes:
-    runs-on: ubuntu-24.04
-    needs: detect-noop
-    if: needs.detect-noop.outputs.noop != 'true'
     steps:
-      - name: Checkout
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: true  # Important for build submodule
+          fetch-depth: 0
 
-      - name: Get modified CRDs
-        id: modified-crds
-        uses: tj-actions/changed-files@v45
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          files: |
-            package/crds/**
-      - name: Report breaking CRD OpenAPI v3 schema changes
-        if: steps.modified-crds.outputs.any_changed == 'true'
-        env:
-          MODIFIED_CRD_LIST: ${{ steps.modified-crds.outputs.all_changed_files }}
+          go-version: '1.21'
+
+      # Build Terraform Provider from source
+      - name: Build Terraform Provider
         run: |
-          make crddiff
-      - name: Report native schema version changes
-        if: ${{ inputs.upjet-based-provider }}
+          git clone --depth 1 ${{ env.TERRAFORM_PROVIDER_REPO }} /tmp/terraform-provider
+          cd /tmp/terraform-provider
+          go mod download
+          go build -o terraform-provider-proxmox
+          mkdir -p $(go env GOPATH)/bin
+          mv terraform-provider-proxmox $(go env GOPATH)/bin/
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+          
+      - name: Setup Build Environment
         run: |
-          make schema-version-diff
+          make submodules
+          make build.init
+          
+      - name: Generate Provider Code
+        run: |
+          make generate.init
+          make generate
 
-  lint:
-    runs-on: ubuntu-24.04
-    needs: detect-noop
-    if: needs.detect-noop.outputs.noop != 'true'
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
-        with:
-          submodules: true
-
-      - name: Setup Go
-        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: Find the Go Build Cache
-        id: go
-        run: echo "cache=$(make go.cachedir)" >> $GITHUB_OUTPUT
-
-      - name: Cache the Go Build Cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.go.outputs.cache }}
-          key: ${{ runner.os }}-build-lint-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-build-lint-
-
-      - name: Cache Go Dependencies
-        uses: actions/cache@v4
-        with:
-          path: .work/pkg
-          key: ${{ runner.os }}-pkg-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-pkg-
-
-      - name: Vendor Dependencies
-        run: make vendor vendor.check
-
-      # We could run 'make lint' but we prefer this action because it leaves
-      # 'annotations' (i.e. it comments on PRs to point out linter violations).
-      - name: Lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: ${{ env.GOLANGCI_VERSION }}
-
-  check-diff:
-    runs-on: ubuntu-24.04
-    needs: detect-noop
-    if: needs.detect-noop.outputs.noop != 'true'
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
-        with:
-          submodules: true
-
-      - name: Setup Go
-        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: Install goimports
-        run: go install golang.org/x/tools/cmd/goimports
-
-      - name: Find the Go Build Cache
-        id: go
-        run: echo "cache=$(make go.cachedir)" >> $GITHUB_OUTPUT
-
-      - name: Cache the Go Build Cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.go.outputs.cache }}
-          key: ${{ runner.os }}-build-check-diff-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-build-check-diff-
-
-      - name: Cache Go Dependencies
-        uses: actions/cache@v4
-        with:
-          path: .work/pkg
-          key: ${{ runner.os }}-pkg-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-pkg-
-
-      - name: Vendor Dependencies
-        run: make vendor vendor.check
-
-      - name: Check Diff
-        run: make check-diff
-
-  unit-tests:
-    runs-on: ubuntu-24.04
-    needs: detect-noop
-    if: needs.detect-noop.outputs.noop != 'true'
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
-        with:
-          submodules: true
-
-      - name: Fetch History
-        run: git fetch --prune --unshallow
-
-      - name: Setup Go
-        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: Find the Go Build Cache
-        id: go
-        run: echo "cache=$(make go.cachedir)" >> $GITHUB_OUTPUT
-
-      - name: Cache the Go Build Cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.go.outputs.cache }}
-          key: ${{ runner.os }}-build-unit-tests-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-build-unit-tests-
-
-      - name: Cache Go Dependencies
-        uses: actions/cache@v4
-        with:
-          path: .work/pkg
-          key: ${{ runner.os }}-pkg-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-pkg-
-
-      - name: Vendor Dependencies
-        run: make vendor vendor.check
-
-      - name: Run Unit Tests
-        run: make -j2 test
-
-      - name: Publish Unit Test Coverage
-        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
-        with:
-          flags: unittests
-          file: _output/tests/linux_amd64/coverage.txt
-
-  local-deploy:
-    runs-on: ubuntu-24.04
-    needs: detect-noop
-    if: needs.detect-noop.outputs.noop != 'true'
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
-        with:
-          submodules: true
-
-      - name: Fetch History
-        run: git fetch --prune --unshallow
-
-      - name: Setup Go
-        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: Find the Go Build Cache
-        id: go
-        run: echo "cache=$(make go.cachedir)" >> $GITHUB_OUTPUT
-
-      - name: Cache the Go Build Cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.go.outputs.cache }}
-          key: ${{ runner.os }}-build-unit-tests-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-build-unit-tests-
-
-      - name: Cache Go Dependencies
-        uses: actions/cache@v4
-        with:
-          path: .work/pkg
-          key: ${{ runner.os }}-pkg-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-pkg-
-
-      - name: Vendor Dependencies
-        run: make vendor vendor.check
-
-      - name: Deploying locally built provider package
-        run: make local-deploy
-
-  publish-artifacts:
-    runs-on: ubuntu-24.04
-    needs:
-      - detect-noop
-      - report-breaking-changes
-      - lint
-      - check-diff
-      - unit-tests
-      - local-deploy
-    if: needs.detect-noop.outputs.noop != 'true'
-
-    steps:
-      - name: Setup QEMU
-        uses: docker/setup-qemu-action@49b3bc8e6bdd4a60e6116a5414239cba5943d3cf # v3
-        with:
-          platforms: all
-
-      - name: Setup Docker Buildx
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          version: ${{ env.DOCKER_BUILDX_VERSION }}
-          install: true
-
-      - name: Login to Upbound
+      
+      - name: Login to GHCR
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
-        if: env.UPBOUND_MARKETPLACE_PUSH_ROBOT_USR != ''
         with:
-          registry: xpkg.upbound.io
-          username: ${{ secrets.UPBOUND_MARKETPLACE_PUSH_ROBOT_USR }}
-          password: ${{ secrets.UPBOUND_MARKETPLACE_PUSH_ROBOT_PSW }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Checkout
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
-        with:
-          submodules: true
+      # Build both architecture binaries
+      - name: Build Provider Binaries
+        run: |
+          ARCH=amd64 OS=linux make build
+          ARCH=arm64 OS=linux make build
 
-      - name: Fetch History
-        run: git fetch --prune --unshallow
-
-      - name: Setup Go
-        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: Find the Go Build Cache
-        id: go
-        run: echo "cache=$(make go.cachedir)" >> $GITHUB_OUTPUT
-
-      - name: Cache the Go Build Cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.go.outputs.cache }}
-          key: ${{ runner.os }}-build-publish-artifacts-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-build-publish-artifacts-
-
-      - name: Cache Go Dependencies
-        uses: actions/cache@v4
-        with:
-          path: .work/pkg
-          key: ${{ runner.os }}-pkg-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-pkg-
-
-      - name: Vendor Dependencies
-        run: make vendor vendor.check
-
-      - name: Build Artifacts
-        run: make -j2 build.all
-        env:
-          # We're using docker buildx, which doesn't actually load the images it
-          # builds by default. Specifying --load does so.
-          BUILD_ARGS: "--load"
-
-      - name: Upload Artifacts to GitHub
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4
-        with:
-          name: output
-          path: _output/**
-
-      - name: Publish Artifacts
-        if: env.UPBOUND_MARKETPLACE_PUSH_ROBOT_USR != ''
-        run: make publish BRANCH_NAME=${GITHUB_REF##*/}
+      # Build and push the four artifacts to GHCR
+      - name: Push Artifacts to GHCR
+        if: github.event_name != 'pull_request'
+        run: |
+          # Push AMD64 Docker image
+          ARCH=amd64 OS=linux make img.build
+          docker tag $(BUILD_REGISTRY)/provider-proxmox-crossplane-amd64 ghcr.io/${{ github.repository }}/provider-proxmox-amd64:${{ github.ref_name }}
+          docker push ghcr.io/${{ github.repository }}/provider-proxmox-amd64:${{ github.ref_name }}
+          
+          # Push ARM64 Docker image
+          ARCH=arm64 OS=linux make img.build
+          docker tag $(BUILD_REGISTRY)/provider-proxmox-crossplane-arm64 ghcr.io/${{ github.repository }}/provider-proxmox-arm64:${{ github.ref_name }}
+          docker push ghcr.io/${{ github.repository }}/provider-proxmox-arm64:${{ github.ref_name }}
+          
+          # Push AMD64 XPKG
+          XPKG_REG_ORGS=ghcr.io/${{ github.repository }} ARCH=amd64 OS=linux make xpkg.build
+          XPKG_REG_ORGS=ghcr.io/${{ github.repository }} make xpkg.publish
+          
+          # Push ARM64 XPKG
+          XPKG_REG_ORGS=ghcr.io/${{ github.repository }} ARCH=arm64 OS=linux make xpkg.build
+          XPKG_REG_ORGS=ghcr.io/${{ github.repository }} make xpkg.publish
