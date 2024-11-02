@@ -37,11 +37,12 @@ jobs:
           git clone --depth 1 ${{ env.TERRAFORM_PROVIDER_REPO }} /tmp/terraform-provider
           cd /tmp/terraform-provider
           go mod download
-          go build -o terraform-provider-proxmox
+          go build -v -o terraform-provider-proxmox
           mkdir -p $(go env GOPATH)/bin
           mv terraform-provider-proxmox $(go env GOPATH)/bin/
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-          
+          ls -l $(go env GOPATH)/bin/terraform-provider-proxmox
+
       - name: Setup Build Environment
         run: |
           make submodules
@@ -49,8 +50,12 @@ jobs:
           
       - name: Generate Provider Code
         run: |
-          make generate.init
-          make generate
+          echo "Current directory: $(pwd)"
+          echo "Terraform version: $(terraform version)"
+          echo "Provider binary location: $(which terraform-provider-proxmox)"
+          
+          make -d generate.init
+          make VERBOSE=1 generate
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
