@@ -22,6 +22,7 @@ SKIP_GENERATE ?= false
 TARGETOS ?= linux
 TARGETARCH ?= amd64
 IMAGE_PLATFORMS ?= linux/$(TARGETARCH)
+VERSION ?= latest
 
 img.build:
 	@$(INFO) docker build $(IMAGE)
