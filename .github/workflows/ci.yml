@@ -2,7 +2,7 @@ name: Build and Push Multi-arch Artifacts
 
 on:
   push:
-    branches: ['main', 'master', 'release-*']
+    branches: ['main', 'master', 'release-*', 'method1-local-generated']
     tags: ['v*']
 
 jobs:
