@@ -1,29 +1,27 @@
-name: Build and Push Provider
+name: Build and Push AMD64 Artifacts
 
 on:
   push:
+    branches: ['main', 'master', 'release-*', 'method1-local-generated']
     tags: ['v*']
-    branches: ['main', 'master', 'release-*']
-  pull_request:
-    branches: ['main', 'master', 'release-*']
-
-env:
-  TERRAFORM_VERSION: "1.5.7"
-  TERRAFORM_PROVIDER_SOURCE: "registry.terraform.io/joekky/proxmox"
-  TERRAFORM_PROVIDER_VERSION: "0.1.0"
-  TERRAFORM_PROVIDER_REPO: "https://github.com/joekky/terraform-provider-proxmox"
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+
+    env:
+      TERRAFORM_VERSION: "1.5.7"
+      TERRAFORM_PROVIDER_SOURCE: "registry.terraform.io/joekky/proxmox"
+      TERRAFORM_PROVIDER_VERSION: "0.1.0"
+      TERRAFORM_PROVIDER_REPO: "https://github.com/joekky/terraform-provider-proxmox"
+      IMAGE_NAME: "ghcr.io/${{ github.repository }}/provider-proxmox-amd64:${{ github.ref_name }}"
+      BUILD_REGISTRY: "ghcr.io/${{ github.repository }}"
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
         with:
-          submodules: true  # Important for build submodule
+          submodules: true
           fetch-depth: 0
 
       - name: Set up Go
@@ -31,7 +29,6 @@ jobs:
         with:
           go-version: '1.21'
 
-      # Build Terraform Provider from source
       - name: Build Terraform Provider
         run: |
           git clone --depth 1 ${{ env.TERRAFORM_PROVIDER_REPO }} /tmp/terraform-provider
@@ -47,7 +44,7 @@ jobs:
         run: |
           make submodules
           make build.init
-          
+
       - name: Generate Provider Code
         run: |
           echo "Current directory: $(pwd)"
@@ -57,44 +54,35 @@ jobs:
           make -d generate.init
           make VERBOSE=1 generate
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      
-      - name: Login to GHCR
-        if: github.event_name != 'pull_request'
+      - name: Build Provider Binary
+        run: make build
+
+      - name: Build AMD64 Docker Image
+        run: |
+          ARCH=amd64 OS=linux make img.build
+
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Build both architecture binaries
-      - name: Build Provider Binaries
+      - name: Push Docker Image to GHCR
         run: |
-          ARCH=amd64 OS=linux make build
-          ARCH=arm64 OS=linux make build
+          docker push ${{ env.IMAGE_NAME }}
 
-      # Build and push the four artifacts to GHCR
-      - name: Push Artifacts to GHCR
-        if: github.event_name != 'pull_request'
+      - name: Build AMD64 XPKG
         run: |
-          # Push AMD64 Docker image
-          ARCH=amd64 OS=linux make img.build
-          docker tag $(BUILD_REGISTRY)/provider-proxmox-crossplane-amd64 ghcr.io/${{ github.repository }}/provider-proxmox-amd64:${{ github.ref_name }}
-          docker push ghcr.io/${{ github.repository }}/provider-proxmox-amd64:${{ github.ref_name }}
-          
-          # Push ARM64 Docker image
-          ARCH=arm64 OS=linux make img.build
-          docker tag $(BUILD_REGISTRY)/provider-proxmox-crossplane-arm64 ghcr.io/${{ github.repository }}/provider-proxmox-arm64:${{ github.ref_name }}
-          docker push ghcr.io/${{ github.repository }}/provider-proxmox-arm64:${{ github.ref_name }}
-          
-          # Push AMD64 XPKG
-          XPKG_REG_ORGS=ghcr.io/${{ github.repository }} ARCH=amd64 OS=linux make xpkg.build
-          XPKG_REG_ORGS=ghcr.io/${{ github.repository }} make xpkg.publish
-          
-          # Push ARM64 XPKG
-          XPKG_REG_ORGS=ghcr.io/${{ github.repository }} ARCH=arm64 OS=linux make xpkg.build
-          XPKG_REG_ORGS=ghcr.io/${{ github.repository }} make xpkg.publish
+          ARCH=amd64 OS=linux make xpkg.build
+
+      - name: Publish XPKG as GitHub Release Asset
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./path/to/amd64-xpkg
+          asset_name: provider-proxmox-amd64.xpkg
+          asset_content_type: application/octet-stream
