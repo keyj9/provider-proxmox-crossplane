@@ -58,3 +58,14 @@ else
 	@echo "Running full build initialization..."
 	# Your existing build.init commands here
 endif
+
+# Build the XPKG
+.PHONY: xpkg.build
+xpkg.build: build
+	@$(INFO) building xpkg
+	@mkdir -p $(OUTPUT_DIR)/xpkg
+	@crossplane xpkg build \
+		--package-root=package \
+		--embed-runtime-image=$(IMAGE_NAME):$(VERSION) \
+		-o $(OUTPUT_DIR)/xpkg/$(PROJECT_NAME).xpkg
+	@$(OK) building xpkg
