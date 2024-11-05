@@ -21,7 +21,7 @@ submodules:
 
 # Build the provider binary
 .PHONY: build
-build:
+build: override
 	@$(INFO) building provider binary
 	@mkdir -p $(OUTPUT_DIR)/bin/linux_amd64
 	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
@@ -47,7 +47,7 @@ xpkg.build: build
 
 # Push artifacts
 .PHONY: publish
-publish: image.build
+publish: override
 	@docker push $(REGISTRY)/$(PROJECT_NAME)-amd64:$(VERSION)
 	@crossplane xpkg push \
 		-f $(OUTPUT_DIR)/xpkg/$(PROJECT_NAME).xpkg \
@@ -58,7 +58,7 @@ SKIP_GENERATE ?= false
 
 # Modify the generate target
 .PHONY: generate
-generate:
+generate: override
 ifeq ($(SKIP_GENERATE),true)
 	@echo "Skipping generation as SKIP_GENERATE=true"
 else
@@ -77,7 +77,7 @@ else
 endif
 
 # Modify any other targets that involve generation
-build.init: $(TERRAFORM_PROVIDER)
+build.init: override
 ifeq ($(SKIP_GENERATE),true)
 	@echo "Skipping build initialization steps that involve generation"
 else
