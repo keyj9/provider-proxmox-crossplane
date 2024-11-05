@@ -13,7 +13,6 @@ jobs:
       TERRAFORM_VERSION: "1.5.7"
       TERRAFORM_PROVIDER_SOURCE: "registry.terraform.io/joekky/proxmox"
       TERRAFORM_PROVIDER_VERSION: "0.1.0"
-      TERRAFORM_PROVIDER_REPO: "https://github.com/joekky/terraform-provider-proxmox"
       IMAGE_NAME: "ghcr.io/${{ github.repository }}/provider-proxmox-amd64:${{ github.ref_name }}"
       BUILD_REGISTRY: "ghcr.io/${{ github.repository }}"
       SKIP_GENERATE: "true"
@@ -30,23 +29,12 @@ jobs:
         with:
           go-version: '1.21'
 
-      - name: Build Terraform Provider
-        run: |
-          git clone --depth 1 ${{ env.TERRAFORM_PROVIDER_REPO }} /tmp/terraform-provider
-          cd /tmp/terraform-provider
-          go mod download
-          go build -v -o terraform-provider-proxmox
-          mkdir -p $(go env GOPATH)/bin
-          mv terraform-provider-proxmox $(go env GOPATH)/bin/
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-          ls -l $(go env GOPATH)/bin/terraform-provider-proxmox
-
       - name: Build Provider Binary
         run: make build SKIP_GENERATE=true
 
       - name: Build AMD64 Docker Image
         run: |
-          ARCH=amd64 OS=linux make img.build SKIP_GENERATE=true
+          ARCH=amd64 OS=linux make image.build SKIP_GENERATE=true
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
