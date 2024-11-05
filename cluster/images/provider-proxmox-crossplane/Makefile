@@ -18,52 +18,24 @@ TERRAFORM_NATIVE_PROVIDER_BINARY ?= terraform-provider-proxmox_v${TERRAFORM_PROV
 
 SKIP_GENERATE ?= false
 
-img.build.shared:
-ifeq ($(SKIP_GENERATE),true)
-	@echo "Building image with pre-generated files..."
-	@cp Dockerfile $(IMAGE_TEMP_DIR) || $(FAIL)
-	@cp terraformrc.hcl $(IMAGE_TEMP_DIR) || $(FAIL)
-	@cp -r $(OUTPUT_DIR)/bin/ $(IMAGE_TEMP_DIR)/bin || $(FAIL)
-	@docker buildx build $(BUILD_ARGS) \
-		--platform $(IMAGE_PLATFORMS) \
-		--build-arg TERRAFORM_VERSION=$(TERRAFORM_VERSION) \
-		--build-arg TERRAFORM_PROVIDER_SOURCE=$(TERRAFORM_PROVIDER_SOURCE) \
-		--build-arg TERRAFORM_PROVIDER_VERSION=$(TERRAFORM_PROVIDER_VERSION) \
-		--build-arg TERRAFORM_PROVIDER_DOWNLOAD_NAME=$(TERRAFORM_PROVIDER_DOWNLOAD_NAME) \
-		--build-arg TERRAFORM_PROVIDER_DOWNLOAD_URL_PREFIX=$(TERRAFORM_PROVIDER_DOWNLOAD_URL_PREFIX) \
-		--build-arg TERRAFORM_NATIVE_PROVIDER_BINARY=$(TERRAFORM_NATIVE_PROVIDER_BINARY) \
-		-t $(IMAGE) \
-		$(IMAGE_TEMP_DIR) || $(FAIL)
-else
-	@cp Dockerfile $(IMAGE_TEMP_DIR) || $(FAIL)
-	@cp terraformrc.hcl $(IMAGE_TEMP_DIR) || $(FAIL)
-	@cp -r $(OUTPUT_DIR)/bin/ $(IMAGE_TEMP_DIR)/bin || $(FAIL)
-	@docker buildx build $(BUILD_ARGS) \
-		--platform $(IMAGE_PLATFORMS) \
-		--build-arg TERRAFORM_VERSION=$(TERRAFORM_VERSION) \
-		--build-arg TERRAFORM_PROVIDER_SOURCE=$(TERRAFORM_PROVIDER_SOURCE) \
-		--build-arg TERRAFORM_PROVIDER_VERSION=$(TERRAFORM_PROVIDER_VERSION) \
-		--build-arg TERRAFORM_PROVIDER_DOWNLOAD_NAME=$(TERRAFORM_PROVIDER_DOWNLOAD_NAME) \
-		--build-arg TERRAFORM_PROVIDER_DOWNLOAD_URL_PREFIX=$(TERRAFORM_PROVIDER_DOWNLOAD_URL_PREFIX) \
-		--build-arg TERRAFORM_NATIVE_PROVIDER_BINARY=$(TERRAFORM_NATIVE_PROVIDER_BINARY) \
-		-t $(IMAGE) \
-		$(IMAGE_TEMP_DIR) || $(FAIL)
-endif
+# Define platform variables
+TARGETOS ?= linux
+TARGETARCH ?= amd64
+IMAGE_PLATFORMS ?= linux/$(TARGETARCH)
 
 img.build:
 	@$(INFO) docker build $(IMAGE)
-	@cp Dockerfile $(IMAGE_TEMP_DIR)
-	@cp terraformrc.hcl $(IMAGE_TEMP_DIR)
-	@cp -r $(OUTPUT_DIR)/bin/ $(IMAGE_TEMP_DIR)/bin
-	@docker build $(BUILD_ARGS) \
-		--platform $(IMAGE_PLATFORMS) \
+	@cp Dockerfile $(IMAGE_TEMP_DIR) || $(FAIL)
+	@cp terraformrc.hcl $(IMAGE_TEMP_DIR) || $(FAIL)
+	@cp -r $(OUTPUT_DIR)/bin/ $(IMAGE_TEMP_DIR)/bin || $(FAIL)
+	@docker build \
+		--build-arg TARGETOS=$(TARGETOS) \
+		--build-arg TARGETARCH=$(TARGETARCH) \
 		--build-arg TERRAFORM_VERSION=$(TERRAFORM_VERSION) \
 		--build-arg TERRAFORM_PROVIDER_SOURCE=$(TERRAFORM_PROVIDER_SOURCE) \
 		--build-arg TERRAFORM_PROVIDER_VERSION=$(TERRAFORM_PROVIDER_VERSION) \
-		--build-arg TARGETOS=$(OS) \
-		--build-arg TARGETARCH=$(ARCH) \
 		-t $(IMAGE) \
-		$(IMAGE_TEMP_DIR)
+		$(IMAGE_TEMP_DIR) || $(FAIL)
 	@$(OK) docker build $(IMAGE)
 
 img.publish:

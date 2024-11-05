@@ -4,6 +4,8 @@ PROJECT_REPO ?= github.com/joekky/$(PROJECT_NAME)
 REGISTRY ?= ghcr.io/joekky
 VERSION ?= $(shell git describe --tags --always --dirty)
 OUTPUT_DIR ?= _output
+TARGETOS ?= linux
+TARGETARCH ?= amd64
 
 # Include essential build tools
 -include build/makelib/common.mk
@@ -29,7 +31,8 @@ build:
 # Build the provider image
 .PHONY: image.build
 image.build: build
-	@$(MAKE) -C cluster/images/provider-proxmox-crossplane img.build
+	@TARGETOS=$(TARGETOS) TARGETARCH=$(TARGETARCH) \
+	$(MAKE) -C cluster/images/provider-proxmox-crossplane img.build
 
 # Build the XPKG
 .PHONY: xpkg.build
