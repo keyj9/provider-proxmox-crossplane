@@ -16,7 +16,11 @@ TERRAFORM_PROVIDER_DOWNLOAD_NAME ?= terraform-provider-proxmox
 TERRAFORM_PROVIDER_DOWNLOAD_URL_PREFIX ?= https://github.com/joekky/terraform-provider-proxmox/releases/download
 TERRAFORM_NATIVE_PROVIDER_BINARY ?= terraform-provider-proxmox_v${TERRAFORM_PROVIDER_VERSION}
 
+SKIP_GENERATE ?= false
+
 img.build.shared:
+ifeq ($(SKIP_GENERATE),true)
+	@echo "Building image with pre-generated files..."
 	@cp Dockerfile $(IMAGE_TEMP_DIR) || $(FAIL)
 	@cp terraformrc.hcl $(IMAGE_TEMP_DIR) || $(FAIL)
 	@cp -r $(OUTPUT_DIR)/bin/ $(IMAGE_TEMP_DIR)/bin || $(FAIL)
@@ -30,6 +34,21 @@ img.build.shared:
 		--build-arg TERRAFORM_NATIVE_PROVIDER_BINARY=$(TERRAFORM_NATIVE_PROVIDER_BINARY) \
 		-t $(IMAGE) \
 		$(IMAGE_TEMP_DIR) || $(FAIL)
+else
+	@cp Dockerfile $(IMAGE_TEMP_DIR) || $(FAIL)
+	@cp terraformrc.hcl $(IMAGE_TEMP_DIR) || $(FAIL)
+	@cp -r $(OUTPUT_DIR)/bin/ $(IMAGE_TEMP_DIR)/bin || $(FAIL)
+	@docker buildx build $(BUILD_ARGS) \
+		--platform $(IMAGE_PLATFORMS) \
+		--build-arg TERRAFORM_VERSION=$(TERRAFORM_VERSION) \
+		--build-arg TERRAFORM_PROVIDER_SOURCE=$(TERRAFORM_PROVIDER_SOURCE) \
+		--build-arg TERRAFORM_PROVIDER_VERSION=$(TERRAFORM_PROVIDER_VERSION) \
+		--build-arg TERRAFORM_PROVIDER_DOWNLOAD_NAME=$(TERRAFORM_PROVIDER_DOWNLOAD_NAME) \
+		--build-arg TERRAFORM_PROVIDER_DOWNLOAD_URL_PREFIX=$(TERRAFORM_PROVIDER_DOWNLOAD_URL_PREFIX) \
+		--build-arg TERRAFORM_NATIVE_PROVIDER_BINARY=$(TERRAFORM_NATIVE_PROVIDER_BINARY) \
+		-t $(IMAGE) \
+		$(IMAGE_TEMP_DIR) || $(FAIL)
+endif
 
 img.build:
 	@$(INFO) docker build $(IMAGE)
