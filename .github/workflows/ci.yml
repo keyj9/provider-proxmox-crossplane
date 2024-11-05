@@ -16,6 +16,7 @@ jobs:
       BUILD_REGISTRY: "ghcr.io/${{ github.repository }}"
       ARCH: "amd64"
       VERSION: "${{ github.ref_name }}"
+      IMAGE_NAME: "ghcr.io/${{ github.repository }}/provider-proxmox-crossplane-amd64"
 
     steps:
       - name: Checkout Repository
@@ -50,8 +51,10 @@ jobs:
 
       - name: Push Docker Image to GHCR
         run: |
-          docker tag $(BUILD_REGISTRY)/provider-proxmox-crossplane-$(ARCH) $(BUILD_REGISTRY)/provider-proxmox-crossplane-$(ARCH):$(VERSION)
-          docker push $(BUILD_REGISTRY)/provider-proxmox-crossplane-$(ARCH):$(VERSION)
+          # Tag the image with version
+          docker tag "${IMAGE_NAME}" "${IMAGE_NAME}:${VERSION}"
+          # Push both latest and versioned tags
+          docker push "${IMAGE_NAME}:${VERSION}"
 
       - name: Build AMD64 XPKG
         run: |
