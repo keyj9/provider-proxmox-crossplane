@@ -69,3 +69,9 @@ xpkg.build: build
 		--embed-runtime-image=$(IMAGE_NAME):$(VERSION) \
 		-o $(OUTPUT_DIR)/xpkg/$(PROJECT_NAME).xpkg
 	@$(OK) building xpkg
+
+xpkg.build.amd64:
+	$(CROSSPLANE) xpkg build --package-file=package/crossplane.yaml --ignore="examples/" --arch=amd64 -o $(OUTPUT_DIR)/package-amd64.xpkg
+
+xpkg.build.arm64:
+	$(CROSSPLANE) xpkg build --package-file=package/crossplane.yaml --ignore="examples/" --arch=arm64 -o $(OUTPUT_DIR)/package-arm64.xpkg
