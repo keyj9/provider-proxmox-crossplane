@@ -1,10 +1,12 @@
 # Start with Alpine 3.20.3
-FROM alpine:3.20.3
+FROM --platform=$BUILDPLATFORM alpine:3.20.3
 
 # Install necessary packages
 RUN apk --no-cache add ca-certificates bash git go
 
 # Define build arguments
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
 ARG TARGETOS
 ARG TARGETARCH
 ARG TERRAFORM_VERSION
@@ -51,3 +53,10 @@ EXPOSE 8080
 
 # Set entrypoint
 ENTRYPOINT ["provider"]
+
+# Add labels
+LABEL org.opencontainers.image.type="provider-runtime"
+LABEL org.opencontainers.image.source="https://github.com/joekky/provider-proxmox-crossplane"
+LABEL org.opencontainers.image.version="${VERSION}"
+LABEL org.opencontainers.image.description="Proxmox Provider for Crossplane"
+LABEL crossplane.io/provider="proxmox"

@@ -29,13 +29,15 @@ img.build:
 	@cp Dockerfile $(IMAGE_TEMP_DIR) || $(FAIL)
 	@cp terraformrc.hcl $(IMAGE_TEMP_DIR) || $(FAIL)
 	@cp -r $(OUTPUT_DIR)/bin/ $(IMAGE_TEMP_DIR)/bin || $(FAIL)
-	@docker build \
+	@docker buildx build \
+		--platform $(TARGETOS)/$(TARGETARCH) \
 		--build-arg TARGETOS=$(TARGETOS) \
 		--build-arg TARGETARCH=$(TARGETARCH) \
 		--build-arg TERRAFORM_VERSION=$(TERRAFORM_VERSION) \
 		--build-arg TERRAFORM_PROVIDER_SOURCE=$(TERRAFORM_PROVIDER_SOURCE) \
 		--build-arg TERRAFORM_PROVIDER_VERSION=$(TERRAFORM_PROVIDER_VERSION) \
 		-t $(IMAGE) \
+		--load \
 		$(IMAGE_TEMP_DIR) || $(FAIL)
 	@$(OK) docker build $(IMAGE)
 
