@@ -36,7 +36,7 @@ package.%:
 	@test -f ../../package/crossplane.yaml || (echo "crossplane.yaml not found" && exit 1)
 	@mkdir -p ../../_output
 	@crossplane xpkg build \
+		-o ../../_output/provider-proxmox-$*.xpkg \
+		--ignore=".github/**/*.yml" \
 		--package-root=../../package \
-		--ignore=../../examples \
-		--arch=$* \
-		-o ../../_output/package-$*.xpkg
+		--verbose
