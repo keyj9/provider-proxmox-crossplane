@@ -27,10 +27,9 @@ image.build: build
 	@TARGETOS=$(TARGETOS) TARGETARCH=$(TARGETARCH) \
 	$(MAKE) -C cluster/images/provider-proxmox-crossplane img.build
 
-# Add these variables at the top of your Makefile
+# Generation control
 SKIP_GENERATE ?= false
 
-# Modify the generate target
 .PHONY: generate
 generate:
 ifeq ($(SKIP_GENERATE),true)
@@ -39,73 +38,3 @@ else
 	@echo "Running generation..."
 	go generate ./...
 endif
-
-# Modify the schema.json target (if it exists)
-config/schema.json:
-ifeq ($(SKIP_GENERATE),true)
-	@echo "Skipping schema generation as SKIP_GENERATE=true"
-	@touch config/schema.json
-else
-	@echo "Generating provider schema..."
-	# Your existing schema generation commands here
-endif
-
-# Modify any other targets that involve generation
-build.init:
-ifeq ($(SKIP_GENERATE),true)
-	@echo "Skipping build initialization steps that involve generation"
-else
-	@echo "Running full build initialization..."
-	# Your existing build.init commands here
-endif
-
-# Build the XPKG
-.PHONY: xpkg.build
-xpkg.build: build
-	@$(INFO) building xpkg
-	@mkdir -p $(OUTPUT_DIR)/xpkg
-	@crossplane xpkg build \
-		--package-root=package \
-		--embed-runtime-image=$(IMAGE_NAME):$(VERSION) \
-		-o $(OUTPUT_DIR)/xpkg/$(PROJECT_NAME).xpkg
-	@$(OK) building xpkg
-
-xpkg.build.amd64:
-	$(CROSSPLANE) xpkg build --package-file=package/crossplane.yaml --ignore="examples/" --arch=amd64 -o $(OUTPUT_DIR)/package-amd64.xpkg
-
-xpkg.build.arm64:
-	$(CROSSPLANE) xpkg build --package-file=package/crossplane.yaml --ignore="examples/" --arch=arm64 -o $(OUTPUT_DIR)/package-arm64.xpkg
-
-img.build:
-	@$(INFO) docker build $(IMAGE)
-	@mkdir -p ${GITHUB_WORKSPACE}/bin/linux_$(TARGETARCH)
-	@cp ${GITHUB_WORKSPACE}/bin/linux_$(TARGETARCH)/provider $(IMAGE_TEMP_DIR)/bin/linux_$(TARGETARCH)/ || $(FAIL)
-	@cp ${GITHUB_WORKSPACE}/cluster/images/provider-proxmox-crossplane/Dockerfile $(IMAGE_TEMP_DIR)/ || $(FAIL)
-	@docker buildx build \
-		--platform $(TARGETOS)/$(TARGETARCH) \
-		--build-arg TARGETOS=$(TARGETOS) \
-		--build-arg TARGETARCH=$(TARGETARCH) \
-		-t $(IMAGE) \
-		--load \
-		$(IMAGE_TEMP_DIR) || $(FAIL)
-	@$(OK) docker build $(IMAGE)
-
-img.publish:
-	@docker push $(IMAGE)
-
-img.promote:
-	@docker tag $(FROM_IMAGE) $(TO_IMAGE)
-	@docker push $(TO_IMAGE)
-
-xpkg.build.%:
-	@echo "Building XPKG for architecture: $*"
-	xpkg build --package-file=package/crossplane.yaml --ignore="examples/" --arch=$* -o _output/package-$*.xpkg
-
-package.%:
-	@echo "Packaging provider for architecture: $*"
-	@test -f ../../package/crossplane.yaml || (echo "crossplane.yaml not found" && exit 1)
-	@mkdir -p ../../_output
-	@crossplane xpkg build \
-		--package-root=../../package \
-		--ignore=".github/**/*.yml,examples/**/*" \
-		-o ../../_output/provider-proxmox-$*.xpkg
