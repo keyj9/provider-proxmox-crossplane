@@ -26,9 +26,9 @@ VERSION ?= latest
 
 img.build:
 	@$(INFO) docker build $(IMAGE)
-	@mkdir -p $(IMAGE_TEMP_DIR)/bin/linux_$(TARGETARCH)
-	@cp bin/linux_$(TARGETARCH)/provider $(IMAGE_TEMP_DIR)/bin/linux_$(TARGETARCH)/ || $(FAIL)
-	@cp Dockerfile $(IMAGE_TEMP_DIR)/ || $(FAIL)
+	@mkdir -p $(CURDIR)/bin/linux_$(TARGETARCH)
+	@cp $(CURDIR)/bin/linux_$(TARGETARCH)/provider $(IMAGE_TEMP_DIR)/bin/linux_$(TARGETARCH)/ || $(FAIL)
+	@cp $(CURDIR)/cluster/images/provider-proxmox-crossplane/Dockerfile $(IMAGE_TEMP_DIR)/ || $(FAIL)
 	@docker buildx build \
 		--platform $(TARGETOS)/$(TARGETARCH) \
 		--build-arg TARGETOS=$(TARGETOS) \
