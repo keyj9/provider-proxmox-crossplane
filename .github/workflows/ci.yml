@@ -67,6 +67,15 @@ jobs:
             TARGETOS=linux
             TARGETARCH=${{ matrix.arch }}
 
+      - name: Install Crossplane CLI
+        run: |
+          if ! command -v crossplane &> /dev/null; then
+            echo "Crossplane CLI not found. Installing..."
+            curl -sL https://raw.githubusercontent.com/crossplane/crossplane/master/install.sh | sh
+            sudo mv crossplane /usr/local/bin/
+            chmod +x /usr/local/bin/crossplane
+          fi
+
       - name: Build XPKG
         run: |
           make xpkg.build.${{ matrix.arch }} SKIP_GENERATE=true
