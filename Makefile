@@ -40,7 +40,7 @@ package: image.build
 		crossplane xpkg build \
 			--package-root . \
 			--embed-runtime-image=$(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) \
-			-o ../_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg
+			-o ../$(OUTPUT_DIR)/$(PROJECT_NAME)-$(TARGETARCH).xpkg
 	@$(OK) building provider package
 
 .PHONY: verify
