@@ -93,8 +93,8 @@ jobs:
           platforms: linux/${{ matrix.arch }}
           push: true
           tags: |
-            ${{ env.IMAGE_NAME }}:${{ env.VERSION }}
-            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY_IMAGE }}:${{ env.VERSION }}
+            ${{ env.REGISTRY_IMAGE }}:latest
           build-args: |
             TARGETOS=linux
             TARGETARCH=${{ matrix.arch }}
@@ -114,3 +114,7 @@ jobs:
         run: |
           ls -la package/
           ls -la package/crds/
+
+      - name: Verify Image
+        run: |
+          docker pull ${{ env.REGISTRY_IMAGE }}:${{ env.VERSION }}
