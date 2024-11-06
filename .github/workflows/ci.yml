@@ -61,7 +61,7 @@ jobs:
           mkdir -p _output
           crossplane xpkg build \
             --package-root=.. \
-            --ignore=".github/workflows/*,examples/**/*" \
+            --ignore=".github/workflows/*" \
             -o _output/package-${ARCH}.xpkg
 
       - name: Build and Push Provider Package
