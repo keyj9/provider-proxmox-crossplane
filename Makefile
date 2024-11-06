@@ -38,3 +38,19 @@ else
 	@echo "Running generation..."
 	go generate ./...
 endif
+
+# Build the provider package
+.PHONY: package
+package:
+	@$(INFO) building provider package
+	@mkdir -p $(OUTPUT_DIR)
+	@cd package && \
+		REGISTRY_IMAGE=$(REGISTRY)/provider-proxmox-crossplane-$(TARGETARCH) \
+		VERSION=$(VERSION) \
+		envsubst < crossplane.yaml > crossplane.yaml.tmp && \
+		mv crossplane.yaml.tmp crossplane.yaml && \
+		crossplane xpkg build \
+			--package-root . \
+			--embed-runtime-image=$(REGISTRY)/provider-proxmox-crossplane-$(TARGETARCH):$(VERSION) \
+			-o ../_output/provider-proxmox-$(TARGETARCH).xpkg
+	@$(OK) building provider package
