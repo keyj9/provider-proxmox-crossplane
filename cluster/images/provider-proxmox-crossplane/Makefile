@@ -38,4 +38,4 @@ package.%:
 	@crossplane xpkg build \
 		--package-root=../../package \
 		--ignore=examples \
-		-o ../../_output/package-$*.xpkg
+		-o ../../_output/package-$(VERSION)-$*.xpkg
