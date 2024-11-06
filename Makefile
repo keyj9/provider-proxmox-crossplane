@@ -12,45 +12,40 @@ TARGETARCH ?= amd64
 -include build/makelib/output.mk
 -include build/makelib/golang.mk
 
-# Build the provider binary
 .PHONY: build
 build:
 	@$(INFO) building provider binary
-	@mkdir -p $(OUTPUT_DIR)/bin/linux_amd64
-	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-		go build -o $(OUTPUT_DIR)/bin/linux_amd64/provider cmd/provider/main.go
+	@mkdir -p $(OUTPUT_DIR)/bin/$(TARGETOS)_$(TARGETARCH)
+	@CGO_ENABLED=0 GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) \
+		go build -o $(OUTPUT_DIR)/bin/$(TARGETOS)_$(TARGETARCH)/provider ./cmd/provider
 	@$(OK) building provider binary
 
-# Build the provider image
 .PHONY: image.build
 image.build: build
 	@TARGETOS=$(TARGETOS) TARGETARCH=$(TARGETARCH) \
 	$(MAKE) -C cluster/images/provider-proxmox-crossplane img.build
 
-# Generation control
-SKIP_GENERATE ?= false
-
-.PHONY: generate
-generate:
-ifeq ($(SKIP_GENERATE),true)
-	@echo "Skipping generation as SKIP_GENERATE=true"
-else
-	@echo "Running generation..."
-	go generate ./...
-endif
-
-# Build the provider package
 .PHONY: package
 package:
 	@$(INFO) building provider package
 	@mkdir -p $(OUTPUT_DIR)
 	@cd package && \
-		REGISTRY_IMAGE=$(REGISTRY)/provider-proxmox-crossplane-$(TARGETARCH) \
+		REGISTRY_IMAGE=$(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH) \
 		VERSION=$(VERSION) \
 		envsubst < crossplane.yaml > crossplane.yaml.tmp && \
 		mv crossplane.yaml.tmp crossplane.yaml && \
 		crossplane xpkg build \
 			--package-root . \
-			--embed-runtime-image=$(REGISTRY)/provider-proxmox-crossplane-$(TARGETARCH):$(VERSION) \
-			-o ../_output/provider-proxmox-$(TARGETARCH).xpkg
+			--embed-runtime-image=$(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) \
+			-o ../_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg
 	@$(OK) building provider package
+
+.PHONY: verify
+verify:
+	@$(INFO) verifying package
+	@cd $(OUTPUT_DIR) && \
+		mkdir -p verify && \
+		cd verify && \
+		tar xf ../$(PROJECT_NAME)-$(TARGETARCH).xpkg && \
+		test -f package.yaml || (echo "package.yaml missing" && exit 1)
+	@$(OK) package verified

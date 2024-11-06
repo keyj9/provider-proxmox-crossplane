@@ -3,29 +3,29 @@
 include ../../../build/makelib/common.mk
 include ../../../build/makelib/imagelight.mk
 
-DOCKER_REGISTRY ?= docker.io
-IMAGE = $(BUILD_REGISTRY)/provider-proxmox-crossplane-$(ARCH)
+IMAGE = $(BUILD_REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH)
 PLATFORMS ?= linux_amd64 linux_arm64
 TARGETOS ?= linux
 TARGETARCH ?= amd64
-VERSION ?= latest
 
 img.build:
 	@$(INFO) docker build $(IMAGE)
-	@mkdir -p $(IMAGE_TEMP_DIR)/bin/linux_$(TARGETARCH)
-	@cp $(PWD)/bin/linux_$(TARGETARCH)/provider $(IMAGE_TEMP_DIR)/bin/linux_$(TARGETARCH)/ || $(FAIL)
-	@cp $(PWD)/cluster/images/provider-proxmox-crossplane/Dockerfile $(IMAGE_TEMP_DIR)/ || $(FAIL)
+	@mkdir -p $(IMAGE_TEMP_DIR)/bin/$(TARGETOS)_$(TARGETARCH)
+	@cp $(PWD)/bin/$(TARGETOS)_$(TARGETARCH)/provider $(IMAGE_TEMP_DIR)/bin/$(TARGETOS)_$(TARGETARCH)/ || $(FAIL)
+	@cp Dockerfile $(IMAGE_TEMP_DIR)/ || $(FAIL)
 	@docker buildx build \
 		--platform $(TARGETOS)/$(TARGETARCH) \
 		--build-arg TARGETOS=$(TARGETOS) \
 		--build-arg TARGETARCH=$(TARGETARCH) \
-		-t $(IMAGE) \
+		-t $(IMAGE):$(VERSION) \
 		--load \
 		$(IMAGE_TEMP_DIR) || $(FAIL)
 	@$(OK) docker build $(IMAGE)
 
 img.publish:
-	@docker push $(IMAGE)
+	@docker push $(IMAGE):$(VERSION)
+	@docker tag $(IMAGE):$(VERSION) $(IMAGE):latest
+	@docker push $(IMAGE):latest
 
 img.promote:
 	@docker tag $(FROM_IMAGE) $(TO_IMAGE)

@@ -17,11 +17,11 @@ jobs:
       id-token: write
 
     env:
-      BUILD_REGISTRY: "ghcr.io/${{ github.repository }}"
-      ARCH: "${{ matrix.arch }}"
-      VERSION: "${{ github.ref_name }}"
-      IMAGE_NAME: "ghcr.io/${{ github.repository }}/provider-proxmox-crossplane-${{ matrix.arch }}"
-      REGISTRY_IMAGE: "ghcr.io/${{ github.repository }}/provider-proxmox-crossplane-${{ matrix.arch }}"
+      PROJECT_NAME: provider-proxmox-crossplane
+      REGISTRY: ghcr.io/${{ github.repository }}
+      VERSION: ${{ github.ref_name }}
+      TARGETOS: linux
+      TARGETARCH: ${{ matrix.arch }}
 
     steps:
       - name: Checkout Repository
@@ -44,18 +44,8 @@ jobs:
           sudo mv crossplane /usr/local/bin/
           chmod +x /usr/local/bin/crossplane
 
-      - name: Verify Crossplane Installation
-        run: |
-          if ! command -v crossplane &> /dev/null; then
-            echo "Crossplane CLI installation failed."
-            exit 1
-          fi
-          crossplane --help
-
-      - name: Build Provider Binary
-        run: |
-          mkdir -p ${GITHUB_WORKSPACE}/bin/linux_${{ matrix.arch }}
-          GOOS=linux GOARCH=${{ matrix.arch }} go build -o ${GITHUB_WORKSPACE}/bin/linux_${{ matrix.arch }}/provider ./cmd/provider
+      - name: Build Provider
+        run: make build
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -64,86 +54,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and Push Docker Image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./cluster/images/provider-proxmox-crossplane/Dockerfile
-          platforms: linux/${{ matrix.arch }}
-          push: true
-          tags: |
-            ${{ env.REGISTRY_IMAGE }}:${{ env.VERSION }}
-            ${{ env.REGISTRY_IMAGE }}:latest
-          build-args: |
-            TARGETOS=linux
-            TARGETARCH=${{ matrix.arch }}
-
-      - name: Wait for image to be available
+      - name: Build and Push Image
         run: |
-          timeout 60 bash -c 'until docker pull ${{ env.REGISTRY_IMAGE }}:${{ env.VERSION }}; do sleep 5; done'
+          make image.build
+          make img.publish
 
-      - name: Package Provider
+      - name: Build Package
         run: |
-          mkdir -p _output
-          cd package
-          
-          # Pre-process crossplane.yaml
-          envsubst < crossplane.yaml > crossplane.yaml.processed
-          mv crossplane.yaml.processed crossplane.yaml
-          
-          # Build package
-          crossplane xpkg build \
-            --package-root . \
-            --embed-runtime-image=${REGISTRY_IMAGE}:${VERSION} \
-            -o ../_output/provider-proxmox-${ARCH}.xpkg
-          
-          # Verify package contents
-          cd ../_output
-          mkdir -p verify
-          cd verify
-          tar xf ../provider-proxmox-${ARCH}.xpkg
-          if [ ! -f "package.yaml" ]; then
-            echo "package.yaml is missing from the package"
-            exit 1
-          fi
+          make package
+          make verify
 
-      - name: Build and Push Provider Package
-        if: github.event_name != 'pull_request'
+      - name: Debug Package
+        if: always()
         run: |
-          # Update crossplane.yaml
-          export VERSION=${{ env.VERSION }}
-          export REGISTRY_IMAGE=${{ env.IMAGE_NAME }}
-          envsubst < package/crossplane.yaml > package/crossplane.yaml.tmp
-          mv package/crossplane.yaml.tmp package/crossplane.yaml
-
-      - name: Debug - List /usr/local/bin
-        run: ls -la /usr/local/bin/
-
-      - name: Debug - Print Environment Variables
-        run: env
-
-      - name: Debug Package Build
-        run: |
-          cd package
-          crossplane xpkg build --package-root . --verbose \
-            -o ../_output/provider-proxmox-${{ matrix.arch }}.xpkg
-
-      - name: Verify Package Structure
-        run: |
-          ls -la package/
-          ls -la package/crds/
-
-      - name: Verify Image
-        run: |
-          docker pull ${{ env.REGISTRY_IMAGE }}:${{ env.VERSION }}
-
-      - name: Verify Build Artifacts
-        run: |
-          ls -la _output/
-          file _output/provider-proxmox-${ARCH}.xpkg
-
-      - name: Debug Environment
-        run: |
-          echo "REGISTRY_IMAGE: ${REGISTRY_IMAGE}"
-          echo "VERSION: ${VERSION}"
-          echo "ARCH: ${ARCH}"
+          echo "Package contents:"
+          ls -la _output/verify/
+          echo "Package.yaml contents:"
+          cat _output/verify/package.yaml
