@@ -59,10 +59,10 @@ jobs:
       - name: Package Provider
         run: |
           mkdir -p _output
-          crossplane xpkg build \
-            --package-root=.. \
-            --ignore=".github/**/*,.github/workflows/*,.github/*.yml,examples/**/*" \
-            -o _output/package-${ARCH}.xpkg
+          cd package && crossplane xpkg build \
+            --package-root=. \
+            --ignore="../.github/**/*" \
+            -o ../_output/package-${ARCH}.xpkg
 
       - name: Build and Push Provider Package
         if: github.event_name != 'pull_request'
