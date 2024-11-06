@@ -49,7 +49,7 @@ jobs:
             echo "Crossplane CLI installation failed."
             exit 1
           fi
-          crossplane version
+          crossplane --help
 
       - name: Install xpkg
         run: |
