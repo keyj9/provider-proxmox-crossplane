@@ -58,6 +58,7 @@ jobs:
 
       - name: Package Provider
         run: |
+          cd cluster/images/provider-proxmox-crossplane
           make package.${{ matrix.arch }}
 
       - name: Build and Push Provider Package
