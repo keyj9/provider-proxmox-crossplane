@@ -86,6 +86,12 @@ jobs:
         run: |
           mkdir -p _output
           cd package
+          
+          # Pre-process crossplane.yaml
+          envsubst < crossplane.yaml > crossplane.yaml.processed
+          mv crossplane.yaml.processed crossplane.yaml
+          
+          # Build package
           crossplane xpkg build \
             --package-root . \
             --embed-runtime-image=${REGISTRY_IMAGE}:${VERSION} \
@@ -130,3 +136,14 @@ jobs:
       - name: Verify Image
         run: |
           docker pull ${{ env.REGISTRY_IMAGE }}:${{ env.VERSION }}
+
+      - name: Verify Build Artifacts
+        run: |
+          ls -la _output/
+          file _output/provider-proxmox-${ARCH}.xpkg
+
+      - name: Debug Environment
+        run: |
+          echo "REGISTRY_IMAGE: ${REGISTRY_IMAGE}"
+          echo "VERSION: ${VERSION}"
+          echo "ARCH: ${ARCH}"
