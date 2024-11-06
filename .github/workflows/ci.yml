@@ -14,6 +14,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
 
     env:
       BUILD_REGISTRY: "ghcr.io/${{ github.repository }}"
@@ -55,6 +56,13 @@ jobs:
         run: |
           mkdir -p ${GITHUB_WORKSPACE}/bin/linux_${{ matrix.arch }}
           GOOS=linux GOARCH=${{ matrix.arch }} go build -o ${GITHUB_WORKSPACE}/bin/linux_${{ matrix.arch }}/provider ./cmd/provider
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
