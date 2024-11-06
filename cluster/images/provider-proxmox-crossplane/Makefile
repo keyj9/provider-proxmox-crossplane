@@ -33,4 +33,10 @@ img.promote:
 
 package.%:
 	@echo "Packaging provider for architecture: $*"
-	xpkg build --package-file=package/crossplane.yaml --ignore="examples/" --arch=$* -o _output/package-$*.xpkg
+	@test -f ../../package/crossplane.yaml || (echo "crossplane.yaml not found" && exit 1)
+	@mkdir -p ../../_output
+	@crossplane xpkg build \
+		--package-file=../../package/crossplane.yaml \
+		--ignore-path=../../examples/ \
+		--arch=$* \
+		-o ../../_output/package-$*.xpkg
