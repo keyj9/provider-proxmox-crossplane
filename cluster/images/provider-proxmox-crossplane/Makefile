@@ -26,16 +26,13 @@ VERSION ?= latest
 
 img.build:
 	@$(INFO) docker build $(IMAGE)
-	@cp Dockerfile $(IMAGE_TEMP_DIR) || $(FAIL)
-	@cp terraformrc.hcl $(IMAGE_TEMP_DIR) || $(FAIL)
-	@cp -r $(OUTPUT_DIR)/bin/ $(IMAGE_TEMP_DIR)/bin || $(FAIL)
+	@mkdir -p $(IMAGE_TEMP_DIR)/bin/linux_$(TARGETARCH)
+	@cp bin/linux_$(TARGETARCH)/provider $(IMAGE_TEMP_DIR)/bin/linux_$(TARGETARCH)/ || $(FAIL)
+	@cp Dockerfile $(IMAGE_TEMP_DIR)/ || $(FAIL)
 	@docker buildx build \
 		--platform $(TARGETOS)/$(TARGETARCH) \
 		--build-arg TARGETOS=$(TARGETOS) \
 		--build-arg TARGETARCH=$(TARGETARCH) \
-		--build-arg TERRAFORM_VERSION=$(TERRAFORM_VERSION) \
-		--build-arg TERRAFORM_PROVIDER_SOURCE=$(TERRAFORM_PROVIDER_SOURCE) \
-		--build-arg TERRAFORM_PROVIDER_VERSION=$(TERRAFORM_PROVIDER_VERSION) \
 		-t $(IMAGE) \
 		--load \
 		$(IMAGE_TEMP_DIR) || $(FAIL)

@@ -75,3 +75,16 @@ xpkg.build.amd64:
 
 xpkg.build.arm64:
 	$(CROSSPLANE) xpkg build --package-file=package/crossplane.yaml --ignore="examples/" --arch=arm64 -o $(OUTPUT_DIR)/package-arm64.xpkg
+
+img.build:
+	@$(INFO) docker build $(IMAGE)
+	@mkdir -p $(IMAGE_TEMP_DIR)/bin/linux_$(TARGETARCH)
+	@cp bin/linux_$(TARGETARCH)/provider $(IMAGE_TEMP_DIR)/bin/linux_$(TARGETARCH)/ || $(FAIL)
+	@cp Dockerfile $(IMAGE_TEMP_DIR)/ || $(FAIL)
+	@docker buildx build \
+		--platform $(TARGETOS)/$(TARGETARCH) \
+		--build-arg TARGETOS=$(TARGETOS) \
+		--build-arg TARGETARCH=$(TARGETARCH) \
+		-t $(IMAGE) \
+		--load \
+		$(IMAGE_TEMP_DIR) || $(FAIL)
