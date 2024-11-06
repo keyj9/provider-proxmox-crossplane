@@ -51,6 +51,31 @@ jobs:
           fi
           crossplane version
 
+      - name: Install xpkg
+        run: |
+          # Determine the latest version of xpkg
+          XPKG_VERSION=$(curl -s https://api.github.com/repos/crossplane/crossplane-tools/releases/latest | grep tag_name | cut -d '"' -f 4)
+          
+          # Set architecture-specific variables
+          if [ "${{ matrix.arch }}" == "amd64" ]; then
+            ARCH="amd64"
+          elif [ "${{ matrix.arch }}" == "arm64" ]; then
+            ARCH="arm64"
+          else
+            echo "Unsupported architecture: ${{ matrix.arch }}"
+            exit 1
+          fi
+          
+          # Download the appropriate binary
+          curl -Lo xpkg https://github.com/crossplane/crossplane-tools/releases/download/${XPKG_VERSION}/xpkg-linux-${ARCH}
+          
+          # Make it executable and move to /usr/local/bin
+          chmod +x xpkg
+          sudo mv xpkg /usr/local/bin/
+          
+          # Verify installation
+          xpkg version
+
       - name: Build Provider Binary
         run: |
           mkdir -p ${GITHUB_WORKSPACE}/bin/linux_${{ matrix.arch }}
@@ -58,7 +83,7 @@ jobs:
 
       - name: Package Provider
         run: |
-          crossplane package create --file package/crossplane.yaml --target _output/package-${{ matrix.arch }}.xpkg
+          make package.${{ matrix.arch }}
 
       - name: Build and Push Provider Package
         if: github.event_name != 'pull_request'

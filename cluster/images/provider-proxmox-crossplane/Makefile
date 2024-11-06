@@ -33,4 +33,4 @@ img.promote:
 
 package.%:
 	@echo "Packaging provider for architecture: $*"
-	crossplane package create --file package/crossplane.yaml --target _output/package-$*.xpkg
+	xpkg build --package-file=package/crossplane.yaml --ignore="examples/" --arch=$* -o _output/package-$*.xpkg
