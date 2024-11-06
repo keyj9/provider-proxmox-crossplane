@@ -46,5 +46,5 @@ package.%:
 		mv crossplane.yaml.tmp crossplane.yaml && \
 		crossplane xpkg build \
 			--package-root . \
-			--embed-runtime-image=$(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) \
+			--embed-runtime-image=$(REGISTRY_IMAGE):$(VERSION) \
 			-o ../_output/provider-proxmox-$*.xpkg
