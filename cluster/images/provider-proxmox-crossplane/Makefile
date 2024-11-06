@@ -38,5 +38,6 @@ package.%:
 	@crossplane xpkg build \
 		--package-root=../../package \
 		--ignore=".github/**/*.yml,examples/**/*" \
+		--embed-runtime-image=$(IMAGE) \
 		-o ../../_output/provider-proxmox-$*.xpkg \
 		--verbose
