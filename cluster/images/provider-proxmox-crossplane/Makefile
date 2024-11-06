@@ -3,11 +3,12 @@
 include ../../../build/makelib/common.mk
 include ../../../build/makelib/imagelight.mk
 
-IMAGE = $(BUILD_REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH)
+IMAGE = $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH)
 PLATFORMS ?= linux_amd64 linux_arm64
 TARGETOS ?= linux
 TARGETARCH ?= amd64
 
+.PHONY: img.build
 img.build:
 	@$(INFO) docker build $(IMAGE)
 	@mkdir -p $(IMAGE_TEMP_DIR)/bin/$(TARGETOS)_$(TARGETARCH)
@@ -22,15 +23,18 @@ img.build:
 		$(IMAGE_TEMP_DIR) || $(FAIL)
 	@$(OK) docker build $(IMAGE)
 
+.PHONY: img.publish
 img.publish:
 	@docker push $(IMAGE):$(VERSION)
 	@docker tag $(IMAGE):$(VERSION) $(IMAGE):latest
 	@docker push $(IMAGE):latest
 
+.PHONY: img.promote
 img.promote:
 	@docker tag $(FROM_IMAGE) $(TO_IMAGE)
 	@docker push $(TO_IMAGE)
 
+.PHONY: package
 package.%:
 	@echo "Packaging provider for architecture: $*"
 	@test -f ../../package/crossplane.yaml || (echo "crossplane.yaml not found" && exit 1)

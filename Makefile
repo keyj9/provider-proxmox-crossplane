@@ -12,8 +12,8 @@ TARGETARCH ?= amd64
 -include build/makelib/output.mk
 -include build/makelib/golang.mk
 
-.PHONY: build
-build:
+.PHONY: build-provider
+build-provider:
 	@$(INFO) building provider binary
 	@mkdir -p bin/$(TARGETOS)_$(TARGETARCH)
 	@CGO_ENABLED=0 GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) \
@@ -21,9 +21,8 @@ build:
 	@$(OK) building provider binary
 
 .PHONY: image.build
-image.build: build
-	@TARGETOS=$(TARGETOS) TARGETARCH=$(TARGETARCH) \
-	$(MAKE) -C cluster/images/provider-proxmox-crossplane img.build
+image.build: build-provider
+	@$(MAKE) -C cluster/images/provider-proxmox-crossplane img.build
 
 .PHONY: package
 package: image.build
