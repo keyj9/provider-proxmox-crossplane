@@ -20,6 +20,7 @@ jobs:
       ARCH: "${{ matrix.arch }}"
       VERSION: "${{ github.ref_name }}"
       IMAGE_NAME: "ghcr.io/${{ github.repository }}/provider-proxmox-crossplane-${{ matrix.arch }}"
+      REGISTRY_IMAGE: "ghcr.io/${{ github.repository }}/provider-proxmox-crossplane-${{ matrix.arch }}"
 
     steps:
       - name: Checkout Repository
@@ -41,6 +42,22 @@ jobs:
           curl -sL https://raw.githubusercontent.com/crossplane/crossplane/master/install.sh | sh
           sudo mv crossplane /usr/local/bin/
           chmod +x /usr/local/bin/crossplane
+          crossplane version
+
+      - name: Install xpkg
+        run: |
+          go install github.com/crossplane/crossplane-tools/cmd/xpkg@latest
+          sudo mv $GOPATH/bin/xpkg /usr/local/bin/
+          chmod +x /usr/local/bin/xpkg
+          xpkg version
+
+      - name: Verify xpkg Installation
+        run: |
+          if ! command -v xpkg &> /dev/null; then
+            echo "xpkg could not be found"
+            exit 1
+          fi
+          xpkg version
 
       - name: Build Provider Binary
         run: |
@@ -81,4 +98,5 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ env.VERSION }}
             ${{ env.IMAGE_NAME }}:latest
           build-args: |
+            TARGETOS=linux
             TARGETARCH=${{ matrix.arch }}
