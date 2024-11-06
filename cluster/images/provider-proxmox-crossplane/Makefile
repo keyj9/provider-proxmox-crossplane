@@ -37,5 +37,6 @@ package.%:
 	@mkdir -p ../../_output
 	@crossplane xpkg build \
 		--package-root=../../package \
-		--ignore=examples \
-		-o ../../_output/package-$(VERSION)-$*.xpkg
+		--ignore=../../examples \
+		--arch=$* \
+		-o ../../_output/package-$*.xpkg
