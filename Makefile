@@ -88,3 +88,15 @@ img.build:
 		-t $(IMAGE) \
 		--load \
 		$(IMAGE_TEMP_DIR) || $(FAIL)
+	@$(OK) docker build $(IMAGE)
+
+img.publish:
+	@docker push $(IMAGE)
+
+img.promote:
+	@docker tag $(FROM_IMAGE) $(TO_IMAGE)
+	@docker push $(TO_IMAGE)
+
+xpkg.build.%:
+	@echo "Building XPKG for architecture: $*"
+	xpkg build --package-file=package/crossplane.yaml --ignore="examples/" --arch=$* -o _output/package-$*.xpkg

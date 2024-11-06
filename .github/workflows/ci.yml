@@ -42,14 +42,12 @@ jobs:
           curl -sL https://raw.githubusercontent.com/crossplane/crossplane/master/install.sh | sh
           sudo mv crossplane /usr/local/bin/
           chmod +x /usr/local/bin/crossplane
-          crossplane version
 
       - name: Install xpkg
         run: |
           go install github.com/crossplane/crossplane-tools/cmd/xpkg@latest
           sudo mv $GOPATH/bin/xpkg /usr/local/bin/
           chmod +x /usr/local/bin/xpkg
-          xpkg version
 
       - name: Verify xpkg Installation
         run: |
@@ -68,10 +66,12 @@ jobs:
         run: |
           make xpkg.build.${{ matrix.arch }} SKIP_GENERATE=true
 
-      - name: Update crossplane.yaml
+      - name: Build and Push Provider Package
+        if: github.event_name != 'pull_request'
         run: |
+          # Update crossplane.yaml
           export VERSION=${{ env.VERSION }}
-          export REGISTRY_IMAGE=${{ env.IMAGE_NAME }}
+          export REGISTRY_IMAGE=${{ env.CONTROLLER_IMAGE }}
           envsubst < package/crossplane.yaml > package/crossplane.yaml.tmp
           mv package/crossplane.yaml.tmp package/crossplane.yaml
 
@@ -100,3 +100,9 @@ jobs:
           build-args: |
             TARGETOS=linux
             TARGETARCH=${{ matrix.arch }}
+
+      - name: Debug - List /usr/local/bin
+        run: ls -la /usr/local/bin/
+
+      - name: Debug - Print Environment Variables
+        run: env
