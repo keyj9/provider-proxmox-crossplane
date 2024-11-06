@@ -24,6 +24,10 @@ build-provider:
 image.build: build-provider
 	@$(MAKE) -C cluster/images/provider-proxmox-crossplane img.build
 
+.PHONY: image.publish
+image.publish:
+	@$(MAKE) -C cluster/images/provider-proxmox-crossplane img.publish
+
 .PHONY: package
 package: image.build
 	@$(INFO) building provider package

@@ -57,7 +57,7 @@ jobs:
       - name: Build and Push Image
         run: |
           make image.build
-          make img.publish
+          make image.publish
 
       - name: Build Package
         run: |

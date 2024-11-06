@@ -41,5 +41,5 @@ package.%:
 	@mkdir -p ../../_output
 	@cd ../../package && crossplane xpkg build \
 		--package-root . \
-		-o ../_output/provider-proxmox-$*.xpkg \
-		--embed-runtime-image=$(IMAGE)
+		--embed-runtime-image=$(IMAGE) \
+		-o ../_output/provider-proxmox-$*.xpkg
