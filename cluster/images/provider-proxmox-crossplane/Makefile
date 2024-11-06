@@ -31,6 +31,6 @@ img.promote:
 	@docker tag $(FROM_IMAGE) $(TO_IMAGE)
 	@docker push $(TO_IMAGE)
 
-xpkg.build.%:
-	@echo "Building XPKG for architecture: $*"
-	xpkg build --package-file=package/crossplane.yaml --ignore="examples/" --arch=$* -o _output/package-$*.xpkg
+package.%:
+	@echo "Packaging provider for architecture: $*"
+	crossplane package create --file package/crossplane.yaml --target _output/package-$*.xpkg

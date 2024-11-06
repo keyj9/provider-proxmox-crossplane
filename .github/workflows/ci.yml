@@ -43,35 +43,29 @@ jobs:
           sudo mv crossplane /usr/local/bin/
           chmod +x /usr/local/bin/crossplane
 
-      - name: Install xpkg
+      - name: Verify Crossplane Installation
         run: |
-          go install github.com/crossplane/crossplane-tools/cmd/xpkg@latest
-          sudo mv $GOPATH/bin/xpkg /usr/local/bin/
-          chmod +x /usr/local/bin/xpkg
-
-      - name: Verify xpkg Installation
-        run: |
-          if ! command -v xpkg &> /dev/null; then
-            echo "xpkg could not be found"
+          if ! command -v crossplane &> /dev/null; then
+            echo "Crossplane CLI installation failed."
             exit 1
           fi
-          xpkg version
+          crossplane version
 
       - name: Build Provider Binary
         run: |
           mkdir -p ${GITHUB_WORKSPACE}/bin/linux_${{ matrix.arch }}
           GOOS=linux GOARCH=${{ matrix.arch }} go build -o ${GITHUB_WORKSPACE}/bin/linux_${{ matrix.arch }}/provider ./cmd/provider
 
-      - name: Build XPKG
+      - name: Package Provider
         run: |
-          make xpkg.build.${{ matrix.arch }} SKIP_GENERATE=true
+          crossplane package create --file package/crossplane.yaml --target _output/package-${{ matrix.arch }}.xpkg
 
       - name: Build and Push Provider Package
         if: github.event_name != 'pull_request'
         run: |
           # Update crossplane.yaml
           export VERSION=${{ env.VERSION }}
-          export REGISTRY_IMAGE=${{ env.CONTROLLER_IMAGE }}
+          export REGISTRY_IMAGE=${{ env.IMAGE_NAME }}
           envsubst < package/crossplane.yaml > package/crossplane.yaml.tmp
           mv package/crossplane.yaml.tmp package/crossplane.yaml
 
