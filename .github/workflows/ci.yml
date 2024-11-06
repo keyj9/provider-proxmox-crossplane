@@ -90,6 +90,16 @@ jobs:
             --package-root . \
             --embed-runtime-image=${REGISTRY_IMAGE}:${VERSION} \
             -o ../_output/provider-proxmox-${ARCH}.xpkg
+          
+          # Verify package contents
+          cd ../_output
+          mkdir -p verify
+          cd verify
+          tar xf ../provider-proxmox-${ARCH}.xpkg
+          if [ ! -f "package.yaml" ]; then
+            echo "package.yaml is missing from the package"
+            exit 1
+          fi
 
       - name: Build and Push Provider Package
         if: github.event_name != 'pull_request'
