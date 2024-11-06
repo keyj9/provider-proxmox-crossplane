@@ -29,18 +29,9 @@ image.publish:
 	@$(MAKE) -C cluster/images/provider-proxmox-crossplane img.publish
 
 .PHONY: package
-package: image.build
+package:
 	@$(INFO) building provider package
-	@mkdir -p $(OUTPUT_DIR)
-	@cd package && \
-		REGISTRY_IMAGE=$(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH) \
-		VERSION=$(VERSION) \
-		envsubst < crossplane.yaml > crossplane.yaml.tmp && \
-		mv crossplane.yaml.tmp crossplane.yaml && \
-		crossplane xpkg build \
-			--package-root . \
-			--embed-runtime-image=$(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) \
-			-o ../$(OUTPUT_DIR)/$(PROJECT_NAME)-$(TARGETARCH).xpkg
+	@$(MAKE) -C cluster/images/provider-proxmox-crossplane package.$(TARGETARCH)
 	@$(OK) building provider package
 
 .PHONY: verify

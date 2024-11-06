@@ -40,9 +40,11 @@ package.%:
 	@test -f ../../package/crossplane.yaml || (echo "crossplane.yaml not found" && exit 1)
 	@mkdir -p ../../_output
 	@cd ../../package && \
+		REGISTRY_IMAGE=$(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH) \
+		VERSION=$(VERSION) \
 		envsubst < crossplane.yaml > crossplane.yaml.tmp && \
 		mv crossplane.yaml.tmp crossplane.yaml && \
 		crossplane xpkg build \
 			--package-root . \
-			--embed-runtime-image=$(IMAGE) \
+			--embed-runtime-image=$(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) \
 			-o ../_output/provider-proxmox-$*.xpkg
