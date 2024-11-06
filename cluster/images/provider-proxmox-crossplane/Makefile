@@ -36,8 +36,6 @@ package.%:
 	@test -f ../../package/crossplane.yaml || (echo "crossplane.yaml not found" && exit 1)
 	@mkdir -p ../../_output
 	@cd ../../package && crossplane xpkg build \
-		--package-root=. \
-		--ignore="../.github/**/*" \
-		--embed-runtime-image=$(IMAGE) \
+		--package-root . \
 		-o ../_output/provider-proxmox-$*.xpkg \
-		--verbose
+		--embed-runtime-image=$(IMAGE)

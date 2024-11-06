@@ -60,8 +60,7 @@ jobs:
         run: |
           mkdir -p _output
           cd package && crossplane xpkg build \
-            --package-root=. \
-            --ignore="../.github/**/*" \
+            --package-root . \
             -o ../_output/package-${ARCH}.xpkg
 
       - name: Build and Push Provider Package
