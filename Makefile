@@ -15,9 +15,9 @@ TARGETARCH ?= amd64
 .PHONY: build
 build:
 	@$(INFO) building provider binary
-	@mkdir -p $(OUTPUT_DIR)/bin/$(TARGETOS)_$(TARGETARCH)
+	@mkdir -p bin/$(TARGETOS)_$(TARGETARCH)
 	@CGO_ENABLED=0 GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) \
-		go build -o $(OUTPUT_DIR)/bin/$(TARGETOS)_$(TARGETARCH)/provider ./cmd/provider
+		go build -o bin/$(TARGETOS)_$(TARGETARCH)/provider ./cmd/provider
 	@$(OK) building provider binary
 
 .PHONY: image.build
@@ -26,7 +26,7 @@ image.build: build
 	$(MAKE) -C cluster/images/provider-proxmox-crossplane img.build
 
 .PHONY: package
-package:
+package: image.build
 	@$(INFO) building provider package
 	@mkdir -p $(OUTPUT_DIR)
 	@cd package && \

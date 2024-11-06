@@ -11,7 +11,7 @@ TARGETARCH ?= amd64
 img.build:
 	@$(INFO) docker build $(IMAGE)
 	@mkdir -p $(IMAGE_TEMP_DIR)/bin/$(TARGETOS)_$(TARGETARCH)
-	@cp $(PWD)/bin/$(TARGETOS)_$(TARGETARCH)/provider $(IMAGE_TEMP_DIR)/bin/$(TARGETOS)_$(TARGETARCH)/ || $(FAIL)
+	@cp ../../../bin/$(TARGETOS)_$(TARGETARCH)/provider $(IMAGE_TEMP_DIR)/bin/$(TARGETOS)_$(TARGETARCH)/ || $(FAIL)
 	@cp Dockerfile $(IMAGE_TEMP_DIR)/ || $(FAIL)
 	@docker buildx build \
 		--platform $(TARGETOS)/$(TARGETARCH) \
