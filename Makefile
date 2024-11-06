@@ -78,9 +78,9 @@ xpkg.build.arm64:
 
 img.build:
 	@$(INFO) docker build $(IMAGE)
-	@mkdir -p $(IMAGE_TEMP_DIR)/bin/linux_$(TARGETARCH)
-	@cp $(PWD)/bin/linux_$(TARGETARCH)/provider $(IMAGE_TEMP_DIR)/bin/linux_$(TARGETARCH)/ || $(FAIL)
-	@cp $(PWD)/cluster/images/provider-proxmox-crossplane/Dockerfile $(IMAGE_TEMP_DIR)/ || $(FAIL)
+	@mkdir -p ${GITHUB_WORKSPACE}/bin/linux_$(TARGETARCH)
+	@cp ${GITHUB_WORKSPACE}/bin/linux_$(TARGETARCH)/provider $(IMAGE_TEMP_DIR)/bin/linux_$(TARGETARCH)/ || $(FAIL)
+	@cp ${GITHUB_WORKSPACE}/cluster/images/provider-proxmox-crossplane/Dockerfile $(IMAGE_TEMP_DIR)/ || $(FAIL)
 	@docker buildx build \
 		--platform $(TARGETOS)/$(TARGETARCH) \
 		--build-arg TARGETOS=$(TARGETOS) \
