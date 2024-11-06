@@ -71,8 +71,8 @@ jobs:
 
       - name: Build and Push
         run: |
-          mkdir -p $(pwd)/bin/linux_${{ matrix.arch }}
-          GOOS=linux GOARCH=${{ matrix.arch }} go build -o $(pwd)/bin/linux_${{ matrix.arch }}/provider ./cmd/provider
+          mkdir -p ${GITHUB_WORKSPACE}/bin/linux_${{ matrix.arch }}
+          GOOS=linux GOARCH=${{ matrix.arch }} go build -o ${GITHUB_WORKSPACE}/bin/linux_${{ matrix.arch }}/provider ./cmd/provider
           make img.build ARCH=${{ matrix.arch }} TARGETOS=linux TARGETARCH=${{ matrix.arch }}
           docker push "${IMAGE_NAME}:${VERSION}"
           docker push "${IMAGE_NAME}:latest"
