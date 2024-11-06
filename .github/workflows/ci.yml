@@ -56,35 +56,6 @@ jobs:
           mkdir -p ${GITHUB_WORKSPACE}/bin/linux_${{ matrix.arch }}
           GOOS=linux GOARCH=${{ matrix.arch }} go build -o ${GITHUB_WORKSPACE}/bin/linux_${{ matrix.arch }}/provider ./cmd/provider
 
-      - name: Package Provider
-        run: |
-          mkdir -p _output
-          cd package && crossplane xpkg build \
-            --package-root . \
-            --embed-runtime-image=${{ env.REGISTRY_IMAGE }}:${{ env.VERSION }} \
-            -o ../_output/provider-proxmox-${{ matrix.arch }}.xpkg
-
-      - name: Build and Push Provider Package
-        if: github.event_name != 'pull_request'
-        run: |
-          # Update crossplane.yaml
-          export VERSION=${{ env.VERSION }}
-          export REGISTRY_IMAGE=${{ env.IMAGE_NAME }}
-          envsubst < package/crossplane.yaml > package/crossplane.yaml.tmp
-          mv package/crossplane.yaml.tmp package/crossplane.yaml
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          platforms: linux/amd64,linux/arm64
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
@@ -98,6 +69,27 @@ jobs:
           build-args: |
             TARGETOS=linux
             TARGETARCH=${{ matrix.arch }}
+
+      - name: Wait for image to be available
+        run: |
+          timeout 60 bash -c 'until docker pull ${{ env.REGISTRY_IMAGE }}:${{ env.VERSION }}; do sleep 5; done'
+
+      - name: Package Provider
+        run: |
+          mkdir -p _output
+          cd package && crossplane xpkg build \
+            --package-root . \
+            --embed-runtime-image=${REGISTRY_IMAGE}:${VERSION} \
+            -o ../_output/provider-proxmox-${ARCH}.xpkg
+
+      - name: Build and Push Provider Package
+        if: github.event_name != 'pull_request'
+        run: |
+          # Update crossplane.yaml
+          export VERSION=${{ env.VERSION }}
+          export REGISTRY_IMAGE=${{ env.IMAGE_NAME }}
+          envsubst < package/crossplane.yaml > package/crossplane.yaml.tmp
+          mv package/crossplane.yaml.tmp package/crossplane.yaml
 
       - name: Debug - List /usr/local/bin
         run: ls -la /usr/local/bin/
