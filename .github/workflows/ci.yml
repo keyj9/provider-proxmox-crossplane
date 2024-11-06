@@ -51,30 +51,6 @@ jobs:
           fi
           crossplane --help
 
-      - name: Install xpkg
-        run: |
-          # Download the appropriate binary with error checking
-          if ! curl -fLo xpkg "https://raw.githubusercontent.com/crossplane/crossplane/master/bin/xpkg"; then
-            echo "Failed to download xpkg binary"
-            exit 1
-          fi
-          
-          # Verify the download was successful
-          if [ ! -s xpkg ]; then
-            echo "Downloaded file is empty"
-            exit 1
-          fi
-          
-          # Make it executable and move to /usr/local/bin
-          chmod +x xpkg
-          sudo mv xpkg /usr/local/bin/
-          
-          # Verify installation
-          if ! xpkg --help; then
-            echo "xpkg installation verification failed"
-            exit 1
-          fi
-
       - name: Build Provider Binary
         run: |
           mkdir -p ${GITHUB_WORKSPACE}/bin/linux_${{ matrix.arch }}
