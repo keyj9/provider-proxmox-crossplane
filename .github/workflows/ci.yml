@@ -61,7 +61,8 @@ jobs:
           mkdir -p _output
           cd package && crossplane xpkg build \
             --package-root . \
-            -o ../_output/package-${ARCH}.xpkg
+            --embed-runtime-image=${{ env.REGISTRY_IMAGE }}:${{ env.VERSION }} \
+            -o ../_output/provider-proxmox-${{ matrix.arch }}.xpkg
 
       - name: Build and Push Provider Package
         if: github.event_name != 'pull_request'
@@ -103,3 +104,13 @@ jobs:
 
       - name: Debug - Print Environment Variables
         run: env
+
+      - name: Debug Package Build
+        run: |
+          crossplane xpkg build --package-root . --verbose \
+            -o ../_output/provider-proxmox-${{ matrix.arch }}.xpkg
+
+      - name: Verify Package Structure
+        run: |
+          ls -la package/
+          ls -la package/crds/
