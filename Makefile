@@ -100,3 +100,8 @@ img.promote:
 xpkg.build.%:
 	@echo "Building XPKG for architecture: $*"
 	xpkg build --package-file=package/crossplane.yaml --ignore="examples/" --arch=$* -o _output/package-$*.xpkg
+
+package.%:
+	@echo "Packaging provider for architecture: $*"
+	cd cluster/images/provider-proxmox-crossplane && \
+	xpkg build --package-file=../../package/crossplane.yaml --ignore="examples/" --arch=$* -o ../../_output/package-$*.xpkg
