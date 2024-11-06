@@ -60,10 +60,9 @@ jobs:
         run: |
           mkdir -p _output
           crossplane xpkg build \
-            --package-file=package/crossplane.yaml \
-            --ignore-path=examples/ \
-            --arch=${{ matrix.arch }} \
-            -o _output/package-${{ matrix.arch }}.xpkg
+            --package-root=package \
+            --ignore="examples/**/*,.github/**/*.yml" \
+            -o _output/package-${ARCH}.xpkg
 
       - name: Build and Push Provider Package
         if: github.event_name != 'pull_request'

@@ -103,5 +103,9 @@ xpkg.build.%:
 
 package.%:
 	@echo "Packaging provider for architecture: $*"
-	cd cluster/images/provider-proxmox-crossplane && \
-	xpkg build --package-file=../../package/crossplane.yaml --ignore="examples/" --arch=$* -o ../../_output/package-$*.xpkg
+	@test -f ../../package/crossplane.yaml || (echo "crossplane.yaml not found" && exit 1)
+	@mkdir -p ../../_output
+	@crossplane xpkg build \
+		--package-root=../../package \
+		--ignore=".github/**/*.yml,examples/**/*" \
+		-o ../../_output/provider-proxmox-$*.xpkg
