@@ -35,9 +35,9 @@ package.%:
 	@echo "Packaging provider for architecture: $*"
 	@test -f ../../package/crossplane.yaml || (echo "crossplane.yaml not found" && exit 1)
 	@mkdir -p ../../_output
-	@crossplane xpkg build \
-		--package-root=../../package \
-		--ignore=".github/**/*,.github/workflows/*,.github/*.yml,examples/**/*" \
+	@cd ../../package && crossplane xpkg build \
+		--package-root=. \
+		--ignore="../.github/**/*" \
 		--embed-runtime-image=$(IMAGE) \
-		-o ../../_output/provider-proxmox-$*.xpkg \
+		-o ../_output/provider-proxmox-$*.xpkg \
 		--verbose
