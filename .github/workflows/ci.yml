@@ -85,7 +85,8 @@ jobs:
       - name: Package Provider
         run: |
           mkdir -p _output
-          cd package && crossplane xpkg build \
+          cd package
+          crossplane xpkg build \
             --package-root . \
             --embed-runtime-image=${REGISTRY_IMAGE}:${VERSION} \
             -o ../_output/provider-proxmox-${ARCH}.xpkg
@@ -107,6 +108,7 @@ jobs:
 
       - name: Debug Package Build
         run: |
+          cd package
           crossplane xpkg build --package-root . --verbose \
             -o ../_output/provider-proxmox-${{ matrix.arch }}.xpkg
 

@@ -3,4 +3,4 @@ kind: Provider
 metadata:
   name: provider-proxmox
 spec:
-  package: joekky/provider-proxmox:v0.1.0
+  package: ghcr.io/joekky/provider-proxmox-crossplane/provider-proxmox-amd64:method1-local-generated
