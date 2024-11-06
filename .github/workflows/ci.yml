@@ -54,7 +54,7 @@ jobs:
       - name: Install xpkg
         run: |
           # Determine the latest version of xpkg
-          XPKG_VERSION=$(curl -s https://api.github.com/repos/crossplane/crossplane-tools/releases/latest | grep tag_name | cut -d '"' -f 4)
+          XPKG_VERSION=$(curl -s https://api.github.com/repos/crossplane/crossplane-tools/releases/latest | jq -r .tag_name)
           
           # Set architecture-specific variables
           if [ "${{ matrix.arch }}" == "amd64" ]; then
@@ -66,15 +66,27 @@ jobs:
             exit 1
           fi
           
-          # Download the appropriate binary
-          curl -Lo xpkg https://github.com/crossplane/crossplane-tools/releases/download/${XPKG_VERSION}/xpkg-linux-${ARCH}
+          # Download the appropriate binary with error checking
+          if ! curl -fLo xpkg "https://github.com/crossplane/crossplane-tools/releases/download/${XPKG_VERSION}/xpkg-linux-${ARCH}"; then
+            echo "Failed to download xpkg binary"
+            exit 1
+          fi
+          
+          # Verify the download was successful
+          if [ ! -s xpkg ]; then
+            echo "Downloaded file is empty"
+            exit 1
+          fi
           
           # Make it executable and move to /usr/local/bin
           chmod +x xpkg
           sudo mv xpkg /usr/local/bin/
           
           # Verify installation
-          xpkg version
+          if ! xpkg version; then
+            echo "xpkg installation verification failed"
+            exit 1
+          fi
 
       - name: Build Provider Binary
         run: |
