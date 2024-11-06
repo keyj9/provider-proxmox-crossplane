@@ -53,21 +53,8 @@ jobs:
 
       - name: Install xpkg
         run: |
-          # Determine the latest version of xpkg
-          XPKG_VERSION=$(curl -s https://api.github.com/repos/crossplane/crossplane-tools/releases/latest | jq -r .tag_name)
-          
-          # Set architecture-specific variables
-          if [ "${{ matrix.arch }}" == "amd64" ]; then
-            ARCH="amd64"
-          elif [ "${{ matrix.arch }}" == "arm64" ]; then
-            ARCH="arm64"
-          else
-            echo "Unsupported architecture: ${{ matrix.arch }}"
-            exit 1
-          fi
-          
           # Download the appropriate binary with error checking
-          if ! curl -fLo xpkg "https://github.com/crossplane/crossplane-tools/releases/download/${XPKG_VERSION}/xpkg-linux-${ARCH}"; then
+          if ! curl -fLo xpkg "https://raw.githubusercontent.com/crossplane/crossplane/master/bin/xpkg"; then
             echo "Failed to download xpkg binary"
             exit 1
           fi
@@ -83,7 +70,7 @@ jobs:
           sudo mv xpkg /usr/local/bin/
           
           # Verify installation
-          if ! xpkg version; then
+          if ! xpkg --help; then
             echo "xpkg installation verification failed"
             exit 1
           fi
