@@ -60,7 +60,7 @@ jobs:
         run: |
           mkdir -p _output
           crossplane xpkg build \
-            --package-root=package \
+            --package-root=.. \
             --ignore="examples/**/*,.github/**/*.yml" \
             -o _output/package-${ARCH}.xpkg
 
