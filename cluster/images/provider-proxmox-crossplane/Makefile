@@ -37,14 +37,14 @@ img.promote:
 .PHONY: package
 package.%:
 	@echo "Packaging provider for architecture: $*"
-	@test -f ../../package/crossplane.yaml || (echo "crossplane.yaml not found" && exit 1)
-	@mkdir -p ../../_output
-	@cd ../../package && \
-		REGISTRY_IMAGE=$(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH) \
+	@test -f $(PACKAGE_ROOT)/crossplane.yaml || (echo "crossplane.yaml not found" && exit 1)
+	@mkdir -p $(OUTPUT_DIR)
+	@cd $(PACKAGE_ROOT) && \
+		REGISTRY_IMAGE=$(REGISTRY)/$(PROJECT_NAME)-$* \
 		VERSION=$(VERSION) \
 		envsubst < crossplane.yaml > crossplane.yaml.tmp && \
 		mv crossplane.yaml.tmp crossplane.yaml && \
 		crossplane xpkg build \
 			--package-root . \
-			--embed-runtime-image=$(REGISTRY_IMAGE):$(VERSION) \
-			-o ../_output/provider-proxmox-$*.xpkg
+			--embed-runtime-image=$(REGISTRY)/$(PROJECT_NAME)-$*:$(VERSION) \
+			-o $(OUTPUT_DIR)/$(PROJECT_NAME)-$*.xpkg

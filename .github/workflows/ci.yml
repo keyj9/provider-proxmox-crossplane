@@ -22,6 +22,8 @@ jobs:
       VERSION: ${{ github.ref_name }}
       TARGETOS: linux
       TARGETARCH: ${{ matrix.arch }}
+      PACKAGE_ROOT: package
+      OUTPUT_DIR: _output
 
     steps:
       - name: Checkout Repository
