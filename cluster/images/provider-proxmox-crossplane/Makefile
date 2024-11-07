@@ -36,10 +36,19 @@ img.promote:
 
 .PHONY: package
 package.%:
-	@mkdir -p $(PACKAGE_ROOT)
-	@mkdir -p $(OUTPUT_DIR)
 	@echo "Packaging provider for architecture: $*"
-	@test -f $(PACKAGE_ROOT)/crossplane.yaml || (echo "crossplane.yaml not found" && exit 1)
+	@echo "PACKAGE_ROOT: $(PACKAGE_ROOT)"
+	@echo "Current directory: $(shell pwd)"
+	@echo "Listing package directory contents:"
+	@ls -la $(PACKAGE_ROOT)
+	
+	@if [ ! -d "$(PACKAGE_ROOT)" ]; then \
+		echo "ERROR: Package root directory does not exist: $(PACKAGE_ROOT)"; \
+		exit 1; \
+	fi
+	
+	@test -f $(PACKAGE_ROOT)/crossplane.yaml || (echo "ERROR: crossplane.yaml not found in $(PACKAGE_ROOT)" && exit 1)
+	
 	@cd $(PACKAGE_ROOT) && \
 		REGISTRY_IMAGE=$(REGISTRY)/$(PROJECT_NAME)-$* \
 		VERSION=$(VERSION) \

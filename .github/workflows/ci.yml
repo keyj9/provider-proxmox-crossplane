@@ -63,8 +63,11 @@ jobs:
 
       - name: Build Package
         run: |
+          pwd
+          ls -la
+          ls -la package
           mkdir -p _output
-          make package
+          make package PACKAGE_ROOT=$(pwd)/package
           make verify
 
       - name: Debug Package
