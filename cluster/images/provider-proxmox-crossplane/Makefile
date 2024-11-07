@@ -1,6 +1,9 @@
 include ../../../build/makelib/common.mk
 include ../../../build/makelib/imagelight.mk
 
+# Define IMAGE_TEMP_DIR if not already defined
+IMAGE_TEMP_DIR ?= $(shell mktemp -d -t provider-proxmox-crossplane-XXXX)
+
 IMAGE = $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH)
 PLATFORMS ?= linux_amd64 # linux_arm64
 TARGETOS ?= linux
@@ -8,6 +11,7 @@ TARGETARCH ?= amd64
 
 .PHONY: img.build
 img.build:
+	@echo "🔍 IMAGE_TEMP_DIR: '$(IMAGE_TEMP_DIR)'"
 	@$(INFO) docker build $(IMAGE)
 	@mkdir -p $(IMAGE_TEMP_DIR)/bin/$(TARGETOS)_$(TARGETARCH)
 	@cp ../../../bin/$(TARGETOS)_$(TARGETARCH)/provider $(IMAGE_TEMP_DIR)/bin/$(TARGETOS)_$(TARGETARCH)/ || $(FAIL)
