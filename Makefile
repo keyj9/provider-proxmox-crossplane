@@ -39,8 +39,8 @@ package:
 package.push:
 	@$(INFO) pushing package to registry
 	@crossplane xpkg push \
-		$(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg \
-		$(REGISTRY)/$(PROJECT_NAME)-xpkg:$(VERSION)-$(TARGETARCH)
+		-f $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg \
+		$(REGISTRY)/$(PROJECT_NAME):v0.1.0-$(TARGETARCH)
 	@$(OK) package pushed
 
 # Save artifacts to downloadable files
