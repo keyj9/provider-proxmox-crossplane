@@ -12,10 +12,6 @@ TARGETARCH ?= amd64
 -include build/makelib/output.mk
 -include build/makelib/golang.mk
 
-.PHONY: verify-deps
-verify-deps:
-	@command -v skopeo >/dev/null 2>&1 || { echo "❌ skopeo is required but not installed. Install with: apt-get install skopeo or brew install skopeo"; exit 1; }
-
 .PHONY: build-provider
 build-provider:
 	@$(INFO) building provider binary
@@ -40,16 +36,29 @@ package:
 	@$(OK) building provider package
 
 .PHONY: verify
-verify: verify-deps
+verify:
 	@$(INFO) verifying package
-	@mkdir -p _output/verify _output/tmp
-	@TMPDIR=$(PWD)/_output/tmp skopeo copy \
-		--override-os linux \
-		--override-arch $(TARGETARCH) \
-		oci-archive:$(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg \
-		dir:_output/verify
+	@mkdir -p _output/verify
+	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/verify/$(PROJECT_NAME)-$(TARGETARCH).tar.gz
+	@cd _output/verify && tar -xzf $(PROJECT_NAME)-$(TARGETARCH).tar.gz
 	@test -f _output/verify/package.yaml || (echo "❌ package.yaml not found" && exit 1)
+	@$(INFO) cleaning up verification files
+	@rm -rf _output/verify
+	@mkdir -p _output/verify
 	@$(OK) package verified
+
+.PHONY: package-debug
+package-debug:
+	@$(INFO) debugging package
+	@mkdir -p _output/debug
+	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/debug/$(PROJECT_NAME)-$(TARGETARCH).tar.gz
+	@cd _output/debug && tar -xzf $(PROJECT_NAME)-$(TARGETARCH).tar.gz
+	@echo "Package contents:"
+	@ls -la _output/debug
+	@cat _output/debug/package.yaml || true
+	@$(INFO) cleaning up debug files
+	@rm -rf _output/debug
+	@$(OK) package debugged
 
 .PHONY: package.push
 package.push:
@@ -58,3 +67,9 @@ package.push:
 		$(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg \
 		$(REGISTRY)/$(PROJECT_NAME)-xpkg:$(VERSION)-$(TARGETARCH)
 	@$(OK) package pushed
+
+.PHONY: clean
+clean:
+	@$(INFO) cleaning up
+	@rm -rf _output/verify _output/debug
+	@$(OK) cleanup complete
