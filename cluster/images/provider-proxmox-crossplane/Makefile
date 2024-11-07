@@ -2,7 +2,7 @@ include ../../../build/makelib/common.mk
 include ../../../build/makelib/imagelight.mk
 
 IMAGE = $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH)
-PLATFORMS ?= linux_amd64 linux_arm64
+PLATFORMS ?= linux_amd64 # linux_arm64
 TARGETOS ?= linux
 TARGETARCH ?= amd64
 
@@ -16,6 +16,7 @@ img.build:
 		--platform $(TARGETOS)/$(TARGETARCH) \
 		--build-arg TARGETOS=$(TARGETOS) \
 		--build-arg TARGETARCH=$(TARGETARCH) \
+		--no-cache \  # Prevent using cached layers
 		-t $(IMAGE):$(VERSION) \
 		--load \
 		$(IMAGE_TEMP_DIR) || $(FAIL)
@@ -49,6 +50,9 @@ package.%:
 	@echo "🔄 Replacing placeholders in package.yaml"
 	@sed -i 's|$${REGISTRY_IMAGE}|$(REGISTRY)/$(PROJECT_NAME)-$*|g' $(PACKAGE_ROOT)/temp/package.yaml
 	@sed -i 's|$${VERSION}|$(VERSION)|g' $(PACKAGE_ROOT)/temp/package.yaml
+
+	@echo "📄 Copying CRDs to temp directory"
+	@cp -r $(PACKAGE_ROOT)/crds $(PACKAGE_ROOT)/temp/crds
 
 	@echo "📜 Contents of temp/package.yaml:"
 	@cat $(PACKAGE_ROOT)/temp/package.yaml

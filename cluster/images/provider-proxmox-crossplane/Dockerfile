@@ -17,7 +17,6 @@ ADD "bin/${TARGETOS}_${TARGETARCH}/provider" /usr/local/bin/provider
 # Set environment variables
 ENV USER_ID=65532
 ENV PLUGIN_DIR=/terraform/provider-mirror/registry.terraform.io/joekky/proxmox/${TERRAFORM_PROVIDER_VERSION}/${TARGETOS}_${TARGETARCH}
-ENV TF_CLI_CONFIG_FILE=/terraform/.terraformrc
 ENV TF_FORK=0
 ENV GOPATH=/go
 
@@ -32,8 +31,6 @@ RUN mkdir -p ${PLUGIN_DIR} && \
 
 # Download and install Terraform
 ADD https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_${TARGETOS}_${TARGETARCH}.zip /tmp
-ADD terraformrc.hcl ${TF_CLI_CONFIG_FILE}
-
 RUN unzip "/tmp/terraform_${TERRAFORM_VERSION}_${TARGETOS}_${TARGETARCH}.zip" -d /usr/local/bin && \
     chmod +x /usr/local/bin/terraform && \
     rm "/tmp/terraform_${TERRAFORM_VERSION}_${TARGETOS}_${TARGETARCH}.zip" && \
@@ -50,4 +47,4 @@ USER ${USER_ID}
 EXPOSE 8080
 
 # Set entrypoint
-ENTRYPOINT ["provider"]
+ENTRYPOINT ["/usr/local/bin/provider"]

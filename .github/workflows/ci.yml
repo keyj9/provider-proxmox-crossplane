@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64, arm64]
+        arch: [amd64] # arm64]  # Temporarily disable ARM64 for debugging
     permissions:
       contents: read
       packages: write
@@ -88,9 +88,12 @@ jobs:
         run: |
           echo "🔍 Debugging Package Creation"
           echo "Environment Variables:"
-          env | grep -E "PACKAGE_ROOT|REGISTRY|VERSION|PROJECT_NAME"
+          echo "PACKAGE_ROOT: $PACKAGE_ROOT"
+          echo "REGISTRY: $REGISTRY"
+          echo "VERSION: $VERSION"
+          echo "PROJECT_NAME: $PROJECT_NAME"
           echo "Directory Structure:"
-          tree $(PACKAGE_ROOT)
+          tree $PACKAGE_ROOT
 
       - name: Upload Generated Files for Inspection
         if: failure()
