@@ -1,95 +1,104 @@
-name: Build and Push Provider
+# .github/workflows/ci.yml
+
+name: Build and Push Multi-arch Artifacts
 
 on:
   push:
+    branches: ['main', 'master', 'release-*', 'method1-local-generated']
     tags: ['v*']
-    branches: ['main', 'master', 'release-*']
-  pull_request:
-    branches: ['main', 'master', 'release-*']
-
-env:
-  TERRAFORM_VERSION: "1.5.7"
-  TERRAFORM_PROVIDER_SOURCE: "registry.terraform.io/joekky/proxmox"
-  TERRAFORM_PROVIDER_VERSION: "0.1.0"
-  TERRAFORM_PROVIDER_REPO: "https://github.com/joekky/terraform-provider-proxmox"
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
     permissions:
       contents: read
       packages: write
+      id-token: write
+
+    env:
+      PROJECT_NAME: provider-proxmox-crossplane
+      REGISTRY: ghcr.io/${{ github.repository }}
+      VERSION: ${{ github.ref_name }}
+      TARGETOS: linux
+      TARGETARCH: ${{ matrix.arch }}
+      PACKAGE_ROOT: package
+      OUTPUT_DIR: _output
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
         with:
-          submodules: true  # Important for build submodule
+          submodules: true
           fetch-depth: 0
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'
 
-      # Build Terraform Provider from source
-      - name: Build Terraform Provider
+      - name: Install Crossplane CLI
         run: |
-          git clone --depth 1 ${{ env.TERRAFORM_PROVIDER_REPO }} /tmp/terraform-provider
-          cd /tmp/terraform-provider
-          go mod download
-          go build -o terraform-provider-proxmox
-          mkdir -p $(go env GOPATH)/bin
-          mv terraform-provider-proxmox $(go env GOPATH)/bin/
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-          
-      - name: Setup Build Environment
-        run: |
-          make submodules
-          make build.init
-          
-      - name: Generate Provider Code
-        run: |
-          make generate.init
-          make generate
+          CROSSPLANE_VERSION=v1.13.0
+          curl -sL https://raw.githubusercontent.com/crossplane/crossplane/${CROSSPLANE_VERSION}/install.sh | sh
+          sudo mv crossplane /usr/local/bin/
+          chmod +x /usr/local/bin/crossplane
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      
-      - name: Login to GHCR
-        if: github.event_name != 'pull_request'
+      - name: Build Provider
+        run: make build-provider
+
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Build both architecture binaries
-      - name: Build Provider Binaries
+      - name: Build and Push Image
         run: |
-          ARCH=amd64 OS=linux make build
-          ARCH=arm64 OS=linux make build
+          make image.build
+          make image.publish
 
-      # Build and push the four artifacts to GHCR
-      - name: Push Artifacts to GHCR
-        if: github.event_name != 'pull_request'
+      - name: Install unzip
+        run: sudo apt-get update && sudo apt-get install -y unzip
+
+      - name: Build Package
         run: |
-          # Push AMD64 Docker image
-          ARCH=amd64 OS=linux make img.build
-          docker tag $(BUILD_REGISTRY)/provider-proxmox-crossplane-amd64 ghcr.io/${{ github.repository }}/provider-proxmox-amd64:${{ github.ref_name }}
-          docker push ghcr.io/${{ github.repository }}/provider-proxmox-amd64:${{ github.ref_name }}
-          
-          # Push ARM64 Docker image
-          ARCH=arm64 OS=linux make img.build
-          docker tag $(BUILD_REGISTRY)/provider-proxmox-crossplane-arm64 ghcr.io/${{ github.repository }}/provider-proxmox-arm64:${{ github.ref_name }}
-          docker push ghcr.io/${{ github.repository }}/provider-proxmox-arm64:${{ github.ref_name }}
-          
-          # Push AMD64 XPKG
-          XPKG_REG_ORGS=ghcr.io/${{ github.repository }} ARCH=amd64 OS=linux make xpkg.build
-          XPKG_REG_ORGS=ghcr.io/${{ github.repository }} make xpkg.publish
-          
-          # Push ARM64 XPKG
-          XPKG_REG_ORGS=ghcr.io/${{ github.repository }} ARCH=arm64 OS=linux make xpkg.build
-          XPKG_REG_ORGS=ghcr.io/${{ github.repository }} make xpkg.publish
+          pwd
+          ls -la
+          ls -la package
+          mkdir -p _output
+          make package PACKAGE_ROOT=$(pwd)/package
+          make verify
+
+      - name: Upload Generated Package
+        uses: actions/upload-artifact@v3
+        with:
+          name: provider-package
+          path: _output/verify/provider-proxmox-crossplane-amd64.xpkg
+
+      - name: Debug Package
+        if: always()
+        run: |
+          echo "Package contents:"
+          ls -la _output/verify/
+          echo "Package.yaml contents:"
+          cat _output/verify/package.yaml
+
+      - name: Debug target for package creation
+        if: always()
+        run: |
+          echo "🔍 Debugging Package Creation"
+          echo "🔍 Debugging Package Creation"
+          echo "Environment Variables:"
+          echo "PACKAGE_ROOT: $PACKAGE_ROOT"
+          echo "REGISTRY: $REGISTRY"
+          echo "VERSION: $VERSION"
+          echo "PROJECT_NAME: $PROJECT_NAME"
+          echo "Directory Structure: $PACKAGE_ROOT"
+          tree "$PACKAGE_ROOT"

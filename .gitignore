@@ -1,11 +1,13 @@
-/.cache
-/.work
-/_output
-cover.out
-/vendor
-/.vendor-new
-.DS_Store
+# Exclude binary files
+/bin/
 
-# ignore IDE folders
-.vscode/
-.idea/
+# Exclude build output
+/_output/
+
+# Include essential generated files
+!/package/_output/*.xpkg
+!/package/crds/*.yaml
+
+# Other exclusions
+*.log
+*.tmp
