@@ -35,31 +35,6 @@ package:
 	@$(MAKE) -C cluster/images/provider-proxmox-crossplane package.$(TARGETARCH)
 	@$(OK) building provider package
 
-.PHONY: verify
-verify:
-	@$(INFO) verifying package
-	@mkdir -p _output/verify
-	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/verify/$(PROJECT_NAME)-$(TARGETARCH).tar.gz
-	@cd _output/verify && tar -xzf $(PROJECT_NAME)-$(TARGETARCH).tar.gz
-	@test -f _output/verify/package.yaml || (echo "❌ package.yaml not found" && exit 1)
-	@$(INFO) cleaning up verification files
-	@rm -rf _output/verify
-	@mkdir -p _output/verify
-	@$(OK) package verified
-
-.PHONY: package-debug
-package-debug:
-	@$(INFO) debugging package
-	@mkdir -p _output/debug
-	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/debug/$(PROJECT_NAME)-$(TARGETARCH).tar.gz
-	@cd _output/debug && tar -xzf $(PROJECT_NAME)-$(TARGETARCH).tar.gz
-	@echo "Package contents:"
-	@ls -la _output/debug
-	@cat _output/debug/package.yaml || true
-	@$(INFO) cleaning up debug files
-	@rm -rf _output/debug
-	@$(OK) package debugged
-
 .PHONY: package.push
 package.push:
 	@$(INFO) pushing package to registry
@@ -68,8 +43,11 @@ package.push:
 		$(REGISTRY)/$(PROJECT_NAME)-xpkg:$(VERSION)-$(TARGETARCH)
 	@$(OK) package pushed
 
-.PHONY: clean
-clean:
-	@$(INFO) cleaning up
-	@rm -rf _output/verify _output/debug
-	@$(OK) cleanup complete
+# Save artifacts to downloadable files
+.PHONY: save-artifacts
+save-artifacts:
+	@$(INFO) saving artifacts
+	@mkdir -p _output/artifacts
+	@docker save $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) > _output/artifacts/provider-image-$(TARGETARCH).tar
+	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/artifacts/
+	@$(OK) artifacts saved

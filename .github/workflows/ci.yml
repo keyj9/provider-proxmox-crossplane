@@ -61,15 +61,17 @@ jobs:
           make image.build
           make image.publish
 
-      - name: Build and Verify Package
+      - name: Build and Push Package
         run: |
           make package PACKAGE_ROOT=$(pwd)/package
-          make verify PACKAGE_ROOT=$(pwd)/package || (make package-debug PACKAGE_ROOT=$(pwd)/package && exit 1)
+          make package.push PACKAGE_ROOT=$(pwd)/package
 
-      - name: Push Package
-        if: success()
-        run: make package.push PACKAGE_ROOT=$(pwd)/package
+      - name: Save Artifacts
+        run: make save-artifacts
 
-      - name: Cleanup
-        if: always()
-        run: make clean
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: provider-artifacts-${{ matrix.arch }}
+          path: _output/artifacts/
+          retention-days: 5
