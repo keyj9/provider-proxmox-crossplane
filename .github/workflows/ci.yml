@@ -1,5 +1,3 @@
-# .github/workflows/ci.yml
-
 name: Build and Push Multi-arch Artifacts
 
 on:
@@ -12,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64]  # Removed arm64 for now to focus on amd64
+        arch: [amd64, arm64]
     permissions:
       contents: read
       packages: write
@@ -44,14 +42,9 @@ jobs:
 
       - name: Install Crossplane CLI
         run: |
-          CROSSPLANE_VERSION=v1.13.0
-          wget https://github.com/crossplane/crossplane/releases/download/${CROSSPLANE_VERSION}/crossplane-linux-amd64
-          chmod +x crossplane-linux-amd64
-          sudo mv crossplane-linux-amd64 /usr/local/bin/crossplane
-          crossplane version
-        shell: /usr/bin/bash -e {0}
-        env:
-          CROSSPLANE_VERSION: v1.13.0
+          curl -sL https://raw.githubusercontent.com/crossplane/crossplane/master/install.sh | sh
+          sudo mv crossplane /usr/local/bin/
+          chmod +x /usr/local/bin/crossplane
 
       - name: Build Provider
         run: make build-provider
@@ -65,8 +58,8 @@ jobs:
 
       - name: Build and Push Image
         run: |
-          make img.build
-          make img.publish
+          make image.build
+          make image.publish
 
       - name: Install unzip
         run: sudo apt-get update && sudo apt-get install -y unzip
@@ -79,12 +72,6 @@ jobs:
           mkdir -p _output
           make package PACKAGE_ROOT=$(pwd)/package
           make verify
-
-      - name: Upload Generated Package
-        uses: actions/upload-artifact@v3
-        with:
-          name: provider-package-${{ matrix.arch }}
-          path: _output/verify/provider-proxmox-crossplane-amd64.xpkg
 
       - name: Debug Package
         if: always()
@@ -99,9 +86,6 @@ jobs:
         run: |
           echo "🔍 Debugging Package Creation"
           echo "Environment Variables:"
-          echo "PACKAGE_ROOT: $PACKAGE_ROOT"
-          echo "REGISTRY: $REGISTRY"
-          echo "VERSION: $VERSION"
-          echo "PROJECT_NAME: $PROJECT_NAME"
-          echo "Directory Structure: $PACKAGE_ROOT"
-          tree "$PACKAGE_ROOT"
+          env | grep -E "PACKAGE_ROOT|REGISTRY|VERSION|PROJECT_NAME"
+          echo "Directory Structure:"
+          tree $(PACKAGE_ROOT)

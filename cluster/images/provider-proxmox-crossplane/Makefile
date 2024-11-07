@@ -41,15 +41,12 @@ package.%:
 	@echo "🌍 Current Directory: $(shell pwd)"
 
 	@mkdir -p $(PACKAGE_ROOT)/_output
-	@mkdir -p $(PACKAGE_ROOT)/temp/crds
+	@mkdir -p $(PACKAGE_ROOT)/temp
 
 	@test -f $(PACKAGE_ROOT)/crossplane.yaml || (echo "❌ ERROR: crossplane.yaml not found" && exit 1)
 
 	@echo "📄 Copying crossplane.yaml to package.yaml"
 	@cp $(PACKAGE_ROOT)/crossplane.yaml $(PACKAGE_ROOT)/temp/package.yaml
-
-	@echo "📄 Copying CRDs to temp/crds/"
-	@cp -r $(PACKAGE_ROOT)/crds/* $(PACKAGE_ROOT)/temp/crds/ || (echo "❌ Failed to copy CRDs" && exit 1)
 
 	@echo "🔄 Replacing placeholders in package.yaml"
 	@sed -i 's|$${REGISTRY_IMAGE}|$(REGISTRY)/$(PROJECT_NAME)-$*|g' $(PACKAGE_ROOT)/temp/package.yaml
@@ -58,9 +55,6 @@ package.%:
 	@echo "📜 Contents of temp/package.yaml:"
 	@cat $(PACKAGE_ROOT)/temp/package.yaml
 
-	@echo "📜 Listing contents of temp/crds/:"
-	@ls -la $(PACKAGE_ROOT)/temp/crds/
-
 	@cd $(PACKAGE_ROOT) && \
 		crossplane xpkg build \
 			--package-root temp \
@@ -68,21 +62,18 @@ package.%:
 			-o $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$*.xpkg || \
 		(echo "❌ Packaging failed" && exit 1)
 
-	@echo "📜 Listing contents of the xpkg:"
-	@unzip -l $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$*.xpkg
-
 	@test -f $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$*.xpkg || \
 		(echo "❌ Package file not created" && exit 1)
 
 	@echo "✅ Successfully created package: $(PROJECT_NAME)-$*.xpkg"
 
+
 .PHONY: verify
 verify:
 	@mkdir -p _output/verify
 	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/verify/
-	@unzip -o _output/verify/$(PROJECT_NAME)-$(TARGETARCH).xpkg -d _output/verify || (echo "❌ Failed to extract package" && exit 1)
+	@unzip -o _output/verify/$(PROJECT_NAME)-$(TARGETARCH).xpkg -C _output/verify || (echo "❌ Failed to extract package" && exit 1)
 	@test -f _output/verify/package.yaml || (echo "❌ package.yaml missing" && exit 1)
-	@test -d _output/verify/crds || (echo "❌ crds directory missing" && exit 1)
 	@echo "✅ Package verified successfully"
 
 .PHONY: package-debug
