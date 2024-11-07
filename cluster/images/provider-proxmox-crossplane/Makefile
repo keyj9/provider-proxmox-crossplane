@@ -3,53 +3,95 @@
 include ../../../build/makelib/common.mk
 include ../../../build/makelib/imagelight.mk
 
-DOCKER_REGISTRY ?= docker.io
-IMAGE = $(BUILD_REGISTRY)/provider-proxmox-crossplane-$(ARCH)
-OSVERSION ?= $(shell cat /etc/os-release | grep VERSION_ID | cut -d= -d'"' -f2)
-
+IMAGE = $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH)
 PLATFORMS ?= linux_amd64 linux_arm64
-TEMP_DIR := $(shell mktemp -d)
-TERRAFORM_VERSION ?= 1.5.5
-TERRAFORM_PROVIDER_SOURCE ?= joekky/proxmox
-TERRAFORM_PROVIDER_VERSION ?= 0.1.0
-TERRAFORM_PROVIDER_DOWNLOAD_NAME ?= terraform-provider-proxmox
-TERRAFORM_PROVIDER_DOWNLOAD_URL_PREFIX ?= https://github.com/joekky/terraform-provider-proxmox/releases/download
-TERRAFORM_NATIVE_PROVIDER_BINARY ?= terraform-provider-proxmox_v${TERRAFORM_PROVIDER_VERSION}
+TARGETOS ?= linux
+TARGETARCH ?= amd64
 
-img.build.shared:
-	@cp Dockerfile $(IMAGE_TEMP_DIR) || $(FAIL)
-	@cp terraformrc.hcl $(IMAGE_TEMP_DIR) || $(FAIL)
-	@cp -r $(OUTPUT_DIR)/bin/ $(IMAGE_TEMP_DIR)/bin || $(FAIL)
-	@docker buildx build $(BUILD_ARGS) \
-		--platform $(IMAGE_PLATFORMS) \
-		--build-arg TERRAFORM_VERSION=$(TERRAFORM_VERSION) \
-		--build-arg TERRAFORM_PROVIDER_SOURCE=$(TERRAFORM_PROVIDER_SOURCE) \
-		--build-arg TERRAFORM_PROVIDER_VERSION=$(TERRAFORM_PROVIDER_VERSION) \
-		--build-arg TERRAFORM_PROVIDER_DOWNLOAD_NAME=$(TERRAFORM_PROVIDER_DOWNLOAD_NAME) \
-		--build-arg TERRAFORM_PROVIDER_DOWNLOAD_URL_PREFIX=$(TERRAFORM_PROVIDER_DOWNLOAD_URL_PREFIX) \
-		--build-arg TERRAFORM_NATIVE_PROVIDER_BINARY=$(TERRAFORM_NATIVE_PROVIDER_BINARY) \
-		-t $(IMAGE) \
-		$(IMAGE_TEMP_DIR) || $(FAIL)
-
+.PHONY: img.build
 img.build:
 	@$(INFO) docker build $(IMAGE)
-	@cp Dockerfile $(IMAGE_TEMP_DIR)
-	@cp terraformrc.hcl $(IMAGE_TEMP_DIR)
-	@cp -r $(OUTPUT_DIR)/bin/ $(IMAGE_TEMP_DIR)/bin
-	@docker build $(BUILD_ARGS) \
-		--platform $(IMAGE_PLATFORMS) \
-		--build-arg TERRAFORM_VERSION=$(TERRAFORM_VERSION) \
-		--build-arg TERRAFORM_PROVIDER_SOURCE=$(TERRAFORM_PROVIDER_SOURCE) \
-		--build-arg TERRAFORM_PROVIDER_VERSION=$(TERRAFORM_PROVIDER_VERSION) \
-		--build-arg TARGETOS=$(OS) \
-		--build-arg TARGETARCH=$(ARCH) \
-		-t $(IMAGE) \
-		$(IMAGE_TEMP_DIR)
+	@mkdir -p $(IMAGE_TEMP_DIR)/bin/$(TARGETOS)_$(TARGETARCH)
+	@cp ../../../bin/$(TARGETOS)_$(TARGETARCH)/provider $(IMAGE_TEMP_DIR)/bin/$(TARGETOS)_$(TARGETARCH)/ || $(FAIL)
+	@cp Dockerfile $(IMAGE_TEMP_DIR)/ || $(FAIL)
+	@docker buildx build \
+		--platform $(TARGETOS)/$(TARGETARCH) \
+		--build-arg TARGETOS=$(TARGETOS) \
+		--build-arg TARGETARCH=$(TARGETARCH) \
+		-t $(IMAGE):$(VERSION) \
+		--load \
+		$(IMAGE_TEMP_DIR) || $(FAIL)
 	@$(OK) docker build $(IMAGE)
 
+.PHONY: img.publish
 img.publish:
-	@docker push $(IMAGE)
+	@docker push $(IMAGE):$(VERSION)
+	@docker tag $(IMAGE):$(VERSION) $(IMAGE):latest
+	@docker push $(IMAGE):latest
 
+.PHONY: img.promote
 img.promote:
 	@docker tag $(FROM_IMAGE) $(TO_IMAGE)
 	@docker push $(TO_IMAGE)
+
+.PHONY: package
+package.%:
+	@echo "🔍 Packaging Provider for Architecture: $*"
+	@echo "📂 Package Root: $(PACKAGE_ROOT)"
+	@echo "🌍 Current Directory: $(shell pwd)"
+
+	@mkdir -p $(PACKAGE_ROOT)/_output
+	@mkdir -p $(PACKAGE_ROOT)/temp/crds
+
+	@test -f $(PACKAGE_ROOT)/crossplane.yaml || (echo "❌ ERROR: crossplane.yaml not found" && exit 1)
+
+	@echo "📄 Copying crossplane.yaml to package.yaml"
+	@cp $(PACKAGE_ROOT)/crossplane.yaml $(PACKAGE_ROOT)/temp/package.yaml
+
+	@echo "📄 Copying CRDs to temp/crds/"
+	@cp -r $(PACKAGE_ROOT)/crds/* $(PACKAGE_ROOT)/temp/crds/ || (echo "❌ Failed to copy CRDs" && exit 1)
+
+	@echo "🔄 Replacing placeholders in package.yaml"
+	@sed -i 's|$${REGISTRY_IMAGE}|$(REGISTRY)/$(PROJECT_NAME)-$*|g' $(PACKAGE_ROOT)/temp/package.yaml
+	@sed -i 's|$${VERSION}|$(VERSION)|g' $(PACKAGE_ROOT)/temp/package.yaml
+
+	@echo "📜 Contents of temp/package.yaml:"
+	@cat $(PACKAGE_ROOT)/temp/package.yaml
+
+	@echo "📜 Listing contents of temp/crds/:"
+	@ls -la $(PACKAGE_ROOT)/temp/crds/
+
+	@cd $(PACKAGE_ROOT) && \
+		crossplane xpkg build \
+			--package-root temp \
+			--embed-runtime-image=$(REGISTRY)/$(PROJECT_NAME)-$*:$(VERSION) \
+			-o $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$*.xpkg || \
+		(echo "❌ Packaging failed" && exit 1)
+
+	@echo "📜 Listing contents of the xpkg:"
+	@unzip -l $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$*.xpkg
+
+	@test -f $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$*.xpkg || \
+		(echo "❌ Package file not created" && exit 1)
+
+	@echo "✅ Successfully created package: $(PROJECT_NAME)-$*.xpkg"
+
+.PHONY: verify
+verify:
+	@mkdir -p _output/verify
+	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/verify/
+	@unzip -o _output/verify/$(PROJECT_NAME)-$(TARGETARCH).xpkg -d _output/verify || (echo "❌ Failed to extract package" && exit 1)
+	@test -f _output/verify/package.yaml || (echo "❌ package.yaml missing" && exit 1)
+	@test -d _output/verify/crds || (echo "❌ crds directory missing" && exit 1)
+	@echo "✅ Package verified successfully"
+
+.PHONY: package-debug
+package-debug:
+	@echo "🔍 Debugging Package Creation"
+	@echo "Environment Variables:"
+	@echo "PACKAGE_ROOT: $(PACKAGE_ROOT)"
+	@echo "REGISTRY: $(REGISTRY)"
+	@echo "VERSION: $(VERSION)"
+	@echo "PROJECT_NAME: $(PROJECT_NAME)"
+	@echo "Directory Structure: $(PACKAGE_ROOT)"
+	@tree $(PACKAGE_ROOT)
