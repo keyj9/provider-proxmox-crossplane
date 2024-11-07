@@ -32,10 +32,8 @@ package.%:
 	@$(INFO) packaging provider for architecture: $*
 	@mkdir -p $(PACKAGE_ROOT)/_output $(PACKAGE_ROOT)/temp
 	@cp $(PACKAGE_ROOT)/crossplane.yaml $(PACKAGE_ROOT)/temp/
-	@sed -i.bak 's|$${REGISTRY_IMAGE}|$(REGISTRY)/$(PROJECT_NAME)-$*|g' $(PACKAGE_ROOT)/temp/crossplane.yaml && rm $(PACKAGE_ROOT)/temp/crossplane.yaml.bak
-	@sed -i.bak 's|$${VERSION}|$(VERSION)|g' $(PACKAGE_ROOT)/temp/crossplane.yaml && rm $(PACKAGE_ROOT)/temp/crossplane.yaml.bak
-	@echo "Contents of crossplane.yaml after variable substitution:"
-	@cat $(PACKAGE_ROOT)/temp/crossplane.yaml
+	@sed -i 's|$${REGISTRY_IMAGE}|$(REGISTRY)/$(PROJECT_NAME)-$*|g' $(PACKAGE_ROOT)/temp/crossplane.yaml
+	@sed -i 's|$${VERSION}|$(VERSION)|g' $(PACKAGE_ROOT)/temp/crossplane.yaml
 	@cd $(PACKAGE_ROOT) && crossplane xpkg build \
 		--package-root temp \
 		--embed-runtime-image=$(REGISTRY)/$(PROJECT_NAME)-$*:$(VERSION) \

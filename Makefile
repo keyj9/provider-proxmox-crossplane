@@ -12,23 +12,35 @@ TARGETARCH ?= amd64
 -include build/makelib/output.mk
 -include build/makelib/golang.mk
 
-.PHONY: build
-build:
-	@echo "Building provider binary"
+.PHONY: build-provider
+build-provider:
+	@$(INFO) building provider binary
 	@mkdir -p bin/$(TARGETOS)_$(TARGETARCH)
 	@CGO_ENABLED=0 GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) \
 		go build -o bin/$(TARGETOS)_$(TARGETARCH)/provider ./cmd/provider
-	@echo "Provider binary built"
+	@$(OK) building provider binary
+
+.PHONY: image.build
+image.build: build-provider
+	@$(MAKE) -C cluster/images/provider-proxmox-crossplane img.build
+
+.PHONY: image.publish
+image.publish:
+	@$(MAKE) -C cluster/images/provider-proxmox-crossplane img.publish
 
 .PHONY: package
 package:
-	@echo "Building provider package"
+	@$(INFO) building provider package
+	@echo "PACKAGE_ROOT is set to: $(PACKAGE_ROOT)"
+	@echo "Contents of PACKAGE_ROOT directory:"
+	@ls -la $(PACKAGE_ROOT)
 	@mkdir -p $(OUTPUT_DIR)
-	@mkdir -p package/_output
-	@cd package && crossplane xpkg build \
-		--package-root . \
-		-o _output/$(PROJECT_NAME).xpkg
-	@echo "Provider package built"
+	@echo "Contents of OUTPUT_DIR directory:"
+	@echo "OUTPUT_DIR: $(OUTPUT_DIR)"
+	@ls -la $(OUTPUT_DIR)
+	@$(MAKE) -C cluster/images/provider-proxm
+	ox-crossplane package.$(TARGETARCH)
+	@$(OK) building provider package
 
 .PHONY: package.push
 package.push:
