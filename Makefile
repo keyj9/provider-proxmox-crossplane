@@ -42,8 +42,12 @@ package:
 .PHONY: verify
 verify: verify-deps
 	@$(INFO) verifying package
-	@mkdir -p _output/verify
-	@skopeo copy oci-archive:$(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg dir:_output/verify
+	@mkdir -p _output/verify _output/tmp
+	@TMPDIR=$(PWD)/_output/tmp skopeo copy \
+		--override-os linux \
+		--override-arch $(TARGETARCH) \
+		oci-archive:$(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg \
+		dir:_output/verify
 	@test -f _output/verify/package.yaml || (echo "❌ package.yaml not found" && exit 1)
 	@$(OK) package verified
 
