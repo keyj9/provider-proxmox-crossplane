@@ -10,11 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64, arm64]
+        arch: [amd64]  # Start with just amd64 to get it working
     permissions:
       contents: read
       packages: write
-      id-token: write
 
     env:
       PROJECT_NAME: provider-proxmox-crossplane
@@ -23,17 +22,12 @@ jobs:
       TARGETOS: linux
       TARGETARCH: ${{ matrix.arch }}
       PACKAGE_ROOT: package
-      OUTPUT_DIR: _output
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: true
-          fetch-depth: 0
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -46,9 +40,6 @@ jobs:
           sudo mv crossplane /usr/local/bin/
           chmod +x /usr/local/bin/crossplane
 
-      - name: Build Provider
-        run: make build-provider
-
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -56,22 +47,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and Push Image
+      - name: Build and Push
         run: |
+          make build-provider
           make image.build
           make image.publish
-
-      - name: Build and Push Package
-        run: |
           make package PACKAGE_ROOT=$(pwd)/package
           make package.push PACKAGE_ROOT=$(pwd)/package
 
-      - name: Save Artifacts
-        run: make save-artifacts
-
-      - name: Upload Artifacts
+      - name: Save Package
         uses: actions/upload-artifact@v3
         with:
-          name: provider-artifacts-${{ matrix.arch }}
-          path: _output/artifacts/
+          name: provider-package-${{ matrix.arch }}
+          path: package/_output/*.xpkg
           retention-days: 5
