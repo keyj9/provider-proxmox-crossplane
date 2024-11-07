@@ -1,5 +1,3 @@
-# cluster/images/provider-proxmox-crossplane/Makefile
-
 include ../../../build/makelib/common.mk
 include ../../../build/makelib/imagelight.mk
 
@@ -64,9 +62,8 @@ package.%:
 
 	@test -f $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$*.xpkg || \
 		(echo "❌ Package file not created" && exit 1)
-
+	
 	@echo "✅ Successfully created package: $(PROJECT_NAME)-$*.xpkg"
-
 
 .PHONY: verify
 verify:
@@ -84,5 +81,5 @@ package-debug:
 	@echo "REGISTRY: $(REGISTRY)"
 	@echo "VERSION: $(VERSION)"
 	@echo "PROJECT_NAME: $(PROJECT_NAME)"
-	@echo "Directory Structure: $(PACKAGE_ROOT)"
+	@echo "Directory Structure:"
 	@tree $(PACKAGE_ROOT)

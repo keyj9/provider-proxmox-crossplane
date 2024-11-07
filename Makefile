@@ -41,7 +41,7 @@ verify:
 	@mkdir -p _output/verify
 	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/verify/
 	@tar -xvf _output/verify/$(PROJECT_NAME)-$(TARGETARCH).xpkg -C _output/verify
-	@$(OK) package verified
+	@$(OK) package verified successfully
 
 # Debug target for package creation
 .PHONY: package-debug

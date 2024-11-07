@@ -56,13 +56,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Debug Dockerfile
+        run: |
+          echo "🔍 Contents of Dockerfile:"
+          cat cluster/images/provider-proxmox-crossplane/Dockerfile
+
       - name: Build and Push Image
         run: |
           make image.build
           make image.publish
-
-      - name: Install unzip
-        run: sudo apt-get update && sudo apt-get install -y unzip
 
       - name: Build Package
         run: |
@@ -89,3 +91,12 @@ jobs:
           env | grep -E "PACKAGE_ROOT|REGISTRY|VERSION|PROJECT_NAME"
           echo "Directory Structure:"
           tree $(PACKAGE_ROOT)
+
+      - name: Upload Generated Files for Inspection
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: generated-files
+          path: |
+            package/_output/verify/
+            cluster/images/provider-proxmox-crossplane/_output/
