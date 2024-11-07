@@ -31,6 +31,7 @@ image.publish:
 .PHONY: package
 package:
 	@$(INFO) building provider package
+	@mkdir -p $(OUTPUT_DIR)
 	@$(MAKE) -C cluster/images/provider-proxmox-crossplane package.$(TARGETARCH)
 	@$(OK) building provider package
 

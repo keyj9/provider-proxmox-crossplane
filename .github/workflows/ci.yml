@@ -63,6 +63,7 @@ jobs:
 
       - name: Build Package
         run: |
+          mkdir -p _output
           make package
           make verify
 

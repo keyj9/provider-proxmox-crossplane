@@ -36,9 +36,10 @@ img.promote:
 
 .PHONY: package
 package.%:
+	@mkdir -p $(PACKAGE_ROOT)
+	@mkdir -p $(OUTPUT_DIR)
 	@echo "Packaging provider for architecture: $*"
 	@test -f $(PACKAGE_ROOT)/crossplane.yaml || (echo "crossplane.yaml not found" && exit 1)
-	@mkdir -p $(OUTPUT_DIR)
 	@cd $(PACKAGE_ROOT) && \
 		REGISTRY_IMAGE=$(REGISTRY)/$(PROJECT_NAME)-$* \
 		VERSION=$(VERSION) \
