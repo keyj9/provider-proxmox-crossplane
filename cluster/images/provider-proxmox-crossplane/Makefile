@@ -65,7 +65,7 @@ package.%:
 verify:
 	@mkdir -p _output/verify
 	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/verify/
-	@tar -xvf _output/verify/$(PROJECT_NAME)-$(TARGETARCH).xpkg -C _output/verify || (echo "❌ Failed to extract package" && exit 1)
+	@unzip -o _output/verify/$(PROJECT_NAME)-$(TARGETARCH).xpkg -C _output/verify || (echo "❌ Failed to extract package" && exit 1)
 	@test -f _output/verify/package.yaml || (echo "❌ package.yaml missing" && exit 1)
 	@echo "✅ Package verified successfully"
 
@@ -77,5 +77,5 @@ package-debug:
 	@echo "REGISTRY: $(REGISTRY)"
 	@echo "VERSION: $(VERSION)"
 	@echo "PROJECT_NAME: $(PROJECT_NAME)"
-	@echo "Directory Structure:"
+	@echo "Directory Structure: $(PACKAGE_ROOT)"
 	@tree $(PACKAGE_ROOT)
