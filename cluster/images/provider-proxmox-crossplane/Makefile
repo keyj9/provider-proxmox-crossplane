@@ -45,9 +45,15 @@ package.%:
 
 	@test -f $(PACKAGE_ROOT)/crossplane.yaml || (echo "❌ ERROR: crossplane.yaml not found" && exit 1)
 
+	@echo "📄 Copying crossplane.yaml to package.yaml"
 	@cp $(PACKAGE_ROOT)/crossplane.yaml $(PACKAGE_ROOT)/temp/package.yaml
+
+	@echo "🔄 Replacing placeholders in package.yaml"
 	@sed -i 's|$${REGISTRY_IMAGE}|$(REGISTRY)/$(PROJECT_NAME)-$*|g' $(PACKAGE_ROOT)/temp/package.yaml
 	@sed -i 's|$${VERSION}|$(VERSION)|g' $(PACKAGE_ROOT)/temp/package.yaml
+
+	@echo "📜 Contents of temp/package.yaml:"
+	@cat $(PACKAGE_ROOT)/temp/package.yaml
 
 	@cd $(PACKAGE_ROOT) && \
 		crossplane xpkg build \
@@ -60,6 +66,7 @@ package.%:
 		(echo "❌ Package file not created" && exit 1)
 
 	@echo "✅ Successfully created package: $(PROJECT_NAME)-$*.xpkg"
+
 
 .PHONY: verify
 verify:
