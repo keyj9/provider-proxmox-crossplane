@@ -2,7 +2,7 @@ name: Build and Push Multi-arch Artifacts
 
 on:
   push:
-    branches: ['main', 'master', 'release-*', 'method1-local-generated']
+    branches: ['main', 'master', 'release-*']
     tags: ['v*']
 
 jobs:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64] # arm64]  # Temporarily disable ARM64 for debugging
+        arch: [amd64, arm64]
     permissions:
       contents: read
       packages: write
@@ -18,8 +18,8 @@ jobs:
 
     env:
       PROJECT_NAME: provider-proxmox-crossplane
-      REGISTRY: ghcr.io/keyj9/provider-proxmox-crossplane
-      VERSION: main
+      REGISTRY: ghcr.io/${{ github.repository }}
+      VERSION: ${{ github.ref_name }}
       TARGETOS: linux
       TARGETARCH: ${{ matrix.arch }}
       PACKAGE_ROOT: package
@@ -56,11 +56,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Debug Dockerfile
-        run: |
-          echo "🔍 Contents of Dockerfile:"
-          cat cluster/images/provider-proxmox-crossplane/Dockerfile
-
       - name: Build and Push Image
         run: |
           make image.build
@@ -69,37 +64,20 @@ jobs:
       - name: Build Package
         run: |
           pwd
-          ls -la
           ls -la package
           mkdir -p _output
           make package PACKAGE_ROOT=$(pwd)/package
           make verify
 
-      - name: Debug Package
+      - name: Debug Package Info
         if: always()
         run: |
-          echo "Package contents:"
-          ls -la _output/verify/
-          echo "Package.yaml contents:"
-          cat _output/verify/package.yaml
+          echo "📦 Package Information:"
+          crossplane xpkg inspect _output/verify/$(PROJECT_NAME)-$(TARGETARCH).xpkg
 
-      - name: Debug target for package creation
-        if: always()
+      - name: Push Package to OCI Registry
+        if: success()
         run: |
-          echo "🔍 Debugging Package Creation"
-          echo "Environment Variables:"
-          echo "PACKAGE_ROOT: $PACKAGE_ROOT"
-          echo "REGISTRY: $REGISTRY"
-          echo "VERSION: $VERSION"
-          echo "PROJECT_NAME: $PROJECT_NAME"
-          echo "Directory Structure:"
-          tree $PACKAGE_ROOT
-
-      - name: Upload Generated Files for Inspection
-        if: failure()
-        uses: actions/upload-artifact@v3
-        with:
-          name: generated-files
-          path: |
-            package/_output/verify/
-            cluster/images/provider-proxmox-crossplane/_output/
+          crossplane xpkg push \
+            _output/verify/$(PROJECT_NAME)-$(TARGETARCH).xpkg \
+            $(REGISTRY)/$(PROJECT_NAME)-xpkg:$(VERSION)-$(TARGETARCH)

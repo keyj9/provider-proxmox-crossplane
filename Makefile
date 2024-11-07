@@ -40,10 +40,9 @@ verify:
 	@$(INFO) verifying package
 	@mkdir -p _output/verify
 	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/verify/
-	@tar -xvf _output/verify/$(PROJECT_NAME)-$(TARGETARCH).xpkg -C _output/verify
-	@$(OK) package verified successfully
+	@crossplane xpkg inspect _output/verify/$(PROJECT_NAME)-$(TARGETARCH).xpkg
+	@$(OK) package verified
 
-# Debug target for package creation
 .PHONY: package-debug
 package-debug:
 	@echo "🔍 Debugging Package Creation"
@@ -51,3 +50,4 @@ package-debug:
 	@env | grep -E "PACKAGE_ROOT|REGISTRY|VERSION|PROJECT_NAME"
 	@echo "Directory Structure:"
 	@tree $(PACKAGE_ROOT)
+	@crossplane xpkg inspect $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg
