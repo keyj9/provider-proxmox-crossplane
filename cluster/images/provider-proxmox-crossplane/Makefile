@@ -60,3 +60,22 @@ package.%:
 		(echo "❌ Package file not created" && exit 1)
 
 	@echo "✅ Successfully created package: $(PROJECT_NAME)-$*.xpkg"
+
+.PHONY: verify
+verify:
+	@mkdir -p _output/verify
+	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/verify/
+	@tar -xvf _output/verify/$(PROJECT_NAME)-$(TARGETARCH).xpkg -C _output/verify || (echo "❌ Failed to extract package" && exit 1)
+	@test -f _output/verify/package.yaml || (echo "❌ package.yaml missing" && exit 1)
+	@echo "✅ Package verified successfully"
+
+.PHONY: package-debug
+package-debug:
+	@echo "🔍 Debugging Package Creation"
+	@echo "Environment Variables:"
+	@echo "PACKAGE_ROOT: $(PACKAGE_ROOT)"
+	@echo "REGISTRY: $(REGISTRY)"
+	@echo "VERSION: $(VERSION)"
+	@echo "PROJECT_NAME: $(PROJECT_NAME)"
+	@echo "Directory Structure:"
+	@tree $(PACKAGE_ROOT)
