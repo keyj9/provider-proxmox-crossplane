@@ -1,12 +1,12 @@
-apiVersion: meta.pkg.crossplane.io/v1
-kind: Provider
-metadata:
-  name: provider-proxmox-crossplane
-spec:
-  controller:
-    image: ${REGISTRY_IMAGE}:${VERSION}
-  package: ${REGISTRY_IMAGE}:${VERSION}
-  ignorePaths:
-    - .github
-    - examples
-    - .gitignore
+   apiVersion: meta.pkg.crossplane.io/v1
+   kind: Provider
+   metadata:
+     name: provider-proxmox-crossplane
+   spec:
+     controller:
+       image: ghcr.io/joekky/provider-proxmox-crossplane:latest
+     package: ghcr.io/joekky/provider-proxmox-crossplane:latest
+     ignorePaths:
+       - .github
+       - examples
+       - .gitignore
