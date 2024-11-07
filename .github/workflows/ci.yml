@@ -61,6 +61,9 @@ jobs:
           make image.build
           make image.publish
 
+      - name: Install unzip
+        run: sudo apt-get update && sudo apt-get install -y unzip
+
       - name: Build Package
         run: |
           pwd
