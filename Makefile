@@ -7,10 +7,10 @@ OUTPUT_DIR ?= _output
 TARGETOS ?= linux
 TARGETARCH ?= amd64
 
-# Include essential build tools
--include build/makelib/common.mk
--include build/makelib/output.mk
--include build/makelib/golang.mk
+include build/makelib/common.mk
+include build/makelib/output.mk
+include build/makelib/golang.mk
+include build/makelib/xpkg.mk
 
 .PHONY: build-provider
 build-provider:
@@ -43,7 +43,6 @@ package.push:
 		$(REGISTRY)/$(PROJECT_NAME):v0.1.0-$(TARGETARCH)
 	@$(OK) package pushed
 
-# Save artifacts to downloadable files
 .PHONY: save-artifacts
 save-artifacts:
 	@$(INFO) saving artifacts
