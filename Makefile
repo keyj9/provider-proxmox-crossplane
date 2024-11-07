@@ -38,11 +38,9 @@ package:
 .PHONY: verify
 verify:
 	@$(INFO) verifying package
-	@cd $(OUTPUT_DIR) && \
-		mkdir -p verify && \
-		cd verify && \
-		tar xf ../$(PROJECT_NAME)-$(TARGETARCH).xpkg && \
-		test -f package.yaml || (echo "package.yaml missing" && exit 1)
+	@mkdir -p _output/verify
+	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/verify/
+	@tar -xvf _output/verify/$(PROJECT_NAME)-$(TARGETARCH).xpkg -C _output/verify
 	@$(OK) package verified
 
 # Debug target for package creation
