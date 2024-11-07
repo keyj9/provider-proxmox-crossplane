@@ -9,13 +9,13 @@ PLATFORMS ?= linux_amd64 # linux_arm64
 TARGETOS ?= linux
 TARGETARCH ?= amd64
 
-.PHONY: img.build
-img.build:
+.PHONY: image.build
+image.build:
 	@echo "🔍 IMAGE_TEMP_DIR: '$(IMAGE_TEMP_DIR)'"
-	@$(INFO) Building Docker image: $(IMAGE)
+	@echo "🔍 Building Docker image: $(IMAGE)"
 	@mkdir -p $(IMAGE_TEMP_DIR)/bin/$(TARGETOS)_$(TARGETARCH)
-	@cp ../../../bin/$(TARGETOS)_$(TARGETARCH)/provider $(IMAGE_TEMP_DIR)/bin/$(TARGETOS)_$(TARGETARCH)/ || $(FAIL)
-	@cp Dockerfile $(IMAGE_TEMP_DIR)/ || $(FAIL)
+	@cp ../../../bin/$(TARGETOS)_$(TARGETARCH)/provider $(IMAGE_TEMP_DIR)/bin/$(TARGETOS)_$(TARGETARCH)/ || (echo "❌ Failed to copy provider binary" && exit 1)
+	@cp Dockerfile $(IMAGE_TEMP_DIR)/ || (echo "❌ Failed to copy Dockerfile" && exit 1)
 	@echo "🔍 Contents of IMAGE_TEMP_DIR:"
 	@ls -la $(IMAGE_TEMP_DIR)
 	@docker buildx build \
@@ -25,21 +25,16 @@ img.build:
 		--no-cache \  # Prevent using cached layers
 		-t $(IMAGE):$(VERSION) \
 		--load \
-		$(IMAGE_TEMP_DIR) || $(FAIL)
-	@$(OK) "✅ Docker image built and tagged successfully"
+		$(IMAGE_TEMP_DIR) || (echo "❌ Docker build failed" && exit 1)
+	@echo "✅ Docker image built and tagged successfully"
 
-.PHONY: img.publish
-img.publish:
-	@docker push $(IMAGE):$(VERSION) || (echo "❌ Failed to push Docker image" && exit 1)
+.PHONY: image.publish
+image.publish:
+	@echo "🔍 Publishing Docker image: $(IMAGE):$(VERSION)"
+	@docker push $(IMAGE):$(VERSION) || (echo "❌ Failed to push Docker image: $(IMAGE):$(VERSION)" && exit 1)
 	@docker tag $(IMAGE):$(VERSION) $(IMAGE):latest || (echo "❌ Failed to tag Docker image as latest" && exit 1)
-	@docker push $(IMAGE):latest || (echo "❌ Failed to push Docker image with latest tag" && exit 1)
+	@docker push $(IMAGE):latest || (echo "❌ Failed to push Docker image: $(IMAGE):latest" && exit 1)
 	@echo "✅ Docker image pushed successfully"
-
-.PHONY: img.promote
-img.promote:
-	@docker tag $(FROM_IMAGE) $(TO_IMAGE) || (echo "❌ Failed to tag Docker image for promotion" && exit 1)
-	@docker push $(TO_IMAGE) || (echo "❌ Failed to push promoted Docker image" && exit 1)
-	@echo "✅ Docker image promoted successfully"
 
 .PHONY: package
 package.%:
@@ -79,9 +74,10 @@ package.%:
 
 .PHONY: verify
 verify:
+	@echo "🔍 Verifying Package"
 	@mkdir -p _output/verify
-	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/verify/
-	@unzip -o _output/verify/$(PROJECT_NAME)-$(TARGETARCH).xpkg -C _output/verify || (echo "❌ Failed to extract package" && exit 1)
+	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/verify/ || (echo "❌ Failed to copy .xpkg file" && exit 1)
+	@unzip -o _output/verify/$(PROJECT_NAME)-$(TARGETARCH).xpkg -C _output/verify/ || (echo "❌ Failed to extract package" && exit 1)
 	@test -f _output/verify/package.yaml || (echo "❌ package.yaml missing" && exit 1)
 	@echo "✅ Package verified successfully"
 
