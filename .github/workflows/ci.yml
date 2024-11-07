@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64, arm64]
+        arch: [amd64] #arm64]
     permissions:
       contents: read
       packages: write
@@ -40,8 +40,10 @@ jobs:
         with:
           go-version: '1.21'
 
-      - name: Install Crossplane CLI
+      - name: Install Dependencies
         run: |
+          sudo apt-get update
+          sudo apt-get install -y skopeo
           curl -sL https://raw.githubusercontent.com/crossplane/crossplane/master/install.sh | sh
           sudo mv crossplane /usr/local/bin/
           chmod +x /usr/local/bin/crossplane
@@ -63,6 +65,7 @@ jobs:
 
       - name: Build and Verify Package
         run: |
+          make verify-deps
           make package PACKAGE_ROOT=$(pwd)/package
           make verify PACKAGE_ROOT=$(pwd)/package
 

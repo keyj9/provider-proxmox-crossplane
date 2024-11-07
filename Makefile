@@ -12,6 +12,10 @@ TARGETARCH ?= amd64
 -include build/makelib/output.mk
 -include build/makelib/golang.mk
 
+.PHONY: verify-deps
+verify-deps:
+	@command -v skopeo >/dev/null 2>&1 || { echo "❌ skopeo is required but not installed. Install with: apt-get install skopeo or brew install skopeo"; exit 1; }
+
 .PHONY: build-provider
 build-provider:
 	@$(INFO) building provider binary
@@ -36,9 +40,11 @@ package:
 	@$(OK) building provider package
 
 .PHONY: verify
-verify:
+verify: verify-deps
 	@$(INFO) verifying package
-	@crossplane xpkg inspect $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg
+	@mkdir -p _output/verify
+	@skopeo copy oci-archive:$(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg dir:_output/verify
+	@test -f _output/verify/package.yaml || (echo "❌ package.yaml not found" && exit 1)
 	@$(OK) package verified
 
 .PHONY: package.push
@@ -48,9 +54,3 @@ package.push:
 		$(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg \
 		$(REGISTRY)/$(PROJECT_NAME)-xpkg:$(VERSION)-$(TARGETARCH)
 	@$(OK) package pushed
-
-.PHONY: package-debug
-package-debug:
-	@$(INFO) debugging package
-	@crossplane xpkg inspect $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg
-	@$(OK) package debugged

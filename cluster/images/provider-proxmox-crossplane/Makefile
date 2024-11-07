@@ -8,7 +8,7 @@ TARGETARCH ?= amd64
 
 .PHONY: img.build
 img.build:
-	@$(INFO) docker build $(IMAGE)
+	@$(INFO) docker build $(IMAGE) for $(TARGETARCH)
 	@mkdir -p $(IMAGE_TEMP_DIR)/bin/$(TARGETOS)_$(TARGETARCH)
 	@cp ../../../bin/$(TARGETOS)_$(TARGETARCH)/provider $(IMAGE_TEMP_DIR)/bin/$(TARGETOS)_$(TARGETARCH)/ || $(FAIL)
 	@cp Dockerfile $(IMAGE_TEMP_DIR)/ || $(FAIL)
@@ -16,16 +16,16 @@ img.build:
 		--platform $(TARGETOS)/$(TARGETARCH) \
 		--build-arg TARGETOS=$(TARGETOS) \
 		--build-arg TARGETARCH=$(TARGETARCH) \
-		-t $(IMAGE):$(VERSION) \
+		-t $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) \
 		--load \
 		$(IMAGE_TEMP_DIR) || $(FAIL)
-	@$(OK) docker build $(IMAGE)
+	@$(OK) docker build $(IMAGE) for $(TARGETARCH)
 
 .PHONY: img.publish
 img.publish:
-	@docker push $(IMAGE):$(VERSION)
-	@docker tag $(IMAGE):$(VERSION) $(IMAGE):latest
-	@docker push $(IMAGE):latest
+	@docker push $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION)
+	@docker tag $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):latest
+	@docker push $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):latest
 
 .PHONY: package
 package.%:
