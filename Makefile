@@ -7,33 +7,28 @@ OUTPUT_DIR ?= _output
 TARGETOS ?= linux
 TARGETARCH ?= amd64
 
-include build/makelib/common.mk
-include build/makelib/output.mk
-include build/makelib/golang.mk
-include build/makelib/xpkg.mk
+# Include essential build tools
+-include build/makelib/common.mk
+-include build/makelib/output.mk
+-include build/makelib/golang.mk
 
-.PHONY: build-provider
-build-provider:
-	@$(INFO) building provider binary
+.PHONY: build
+build:
+	@echo "Building provider binary"
 	@mkdir -p bin/$(TARGETOS)_$(TARGETARCH)
 	@CGO_ENABLED=0 GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) \
 		go build -o bin/$(TARGETOS)_$(TARGETARCH)/provider ./cmd/provider
-	@$(OK) building provider binary
-
-.PHONY: image.build
-image.build: build-provider
-	@$(MAKE) -C cluster/images/provider-proxmox-crossplane img.build
-
-.PHONY: image.publish
-image.publish:
-	@$(MAKE) -C cluster/images/provider-proxmox-crossplane img.publish
+	@echo "Provider binary built"
 
 .PHONY: package
 package:
-	@$(INFO) building provider package
+	@echo "Building provider package"
 	@mkdir -p $(OUTPUT_DIR)
-	@$(MAKE) -C cluster/images/provider-proxmox-crossplane package.$(TARGETARCH)
-	@$(OK) building provider package
+	@mkdir -p package/_output
+	@cd package && crossplane xpkg build \
+		--package-root . \
+		-o _output/$(PROJECT_NAME).xpkg
+	@echo "Provider package built"
 
 .PHONY: package.push
 package.push:
@@ -43,6 +38,7 @@ package.push:
 		$(REGISTRY)/$(PROJECT_NAME):v0.1.0-$(TARGETARCH)
 	@$(OK) package pushed
 
+# Save artifacts to downloadable files
 .PHONY: save-artifacts
 save-artifacts:
 	@$(INFO) saving artifacts
