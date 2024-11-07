@@ -18,8 +18,8 @@ jobs:
 
     env:
       PROJECT_NAME: provider-proxmox-crossplane
-      REGISTRY: ghcr.io/${{ github.repository }}
-      VERSION: ${{ github.ref_name }}
+      REGISTRY: ghcr.io/keyj9/provider-proxmox-crossplane
+      VERSION: main
       TARGETOS: linux
       TARGETARCH: ${{ matrix.arch }}
       PACKAGE_ROOT: package
@@ -64,7 +64,7 @@ jobs:
       - name: Build and Push Image
         run: |
           make image.build
-          make image.publish
+          make img.publish
 
       - name: Build Package
         run: |

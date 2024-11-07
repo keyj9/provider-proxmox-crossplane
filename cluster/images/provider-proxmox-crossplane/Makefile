@@ -12,10 +12,12 @@ TARGETARCH ?= amd64
 .PHONY: img.build
 img.build:
 	@echo "🔍 IMAGE_TEMP_DIR: '$(IMAGE_TEMP_DIR)'"
-	@$(INFO) docker build $(IMAGE)
+	@$(INFO) Building Docker image: $(IMAGE)
 	@mkdir -p $(IMAGE_TEMP_DIR)/bin/$(TARGETOS)_$(TARGETARCH)
 	@cp ../../../bin/$(TARGETOS)_$(TARGETARCH)/provider $(IMAGE_TEMP_DIR)/bin/$(TARGETOS)_$(TARGETARCH)/ || $(FAIL)
 	@cp Dockerfile $(IMAGE_TEMP_DIR)/ || $(FAIL)
+	@echo "🔍 Contents of IMAGE_TEMP_DIR:"
+	@ls -la $(IMAGE_TEMP_DIR)
 	@docker buildx build \
 		--platform $(TARGETOS)/$(TARGETARCH) \
 		--build-arg TARGETOS=$(TARGETOS) \
@@ -24,18 +26,20 @@ img.build:
 		-t $(IMAGE):$(VERSION) \
 		--load \
 		$(IMAGE_TEMP_DIR) || $(FAIL)
-	@$(OK) docker build $(IMAGE)
+	@$(OK) "✅ Docker image built and tagged successfully"
 
 .PHONY: img.publish
 img.publish:
-	@docker push $(IMAGE):$(VERSION)
-	@docker tag $(IMAGE):$(VERSION) $(IMAGE):latest
-	@docker push $(IMAGE):latest
+	@docker push $(IMAGE):$(VERSION) || (echo "❌ Failed to push Docker image" && exit 1)
+	@docker tag $(IMAGE):$(VERSION) $(IMAGE):latest || (echo "❌ Failed to tag Docker image as latest" && exit 1)
+	@docker push $(IMAGE):latest || (echo "❌ Failed to push Docker image with latest tag" && exit 1)
+	@echo "✅ Docker image pushed successfully"
 
 .PHONY: img.promote
 img.promote:
-	@docker tag $(FROM_IMAGE) $(TO_IMAGE)
-	@docker push $(TO_IMAGE)
+	@docker tag $(FROM_IMAGE) $(TO_IMAGE) || (echo "❌ Failed to tag Docker image for promotion" && exit 1)
+	@docker push $(TO_IMAGE) || (echo "❌ Failed to push promoted Docker image" && exit 1)
+	@echo "✅ Docker image promoted successfully"
 
 .PHONY: package
 package.%:
