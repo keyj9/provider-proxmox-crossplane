@@ -36,25 +36,27 @@ img.promote:
 
 .PHONY: package
 package.%:
-	@echo "Packaging provider for architecture: $*"
-	@echo "PACKAGE_ROOT: $(PACKAGE_ROOT)"
-	@echo "Current directory: $(shell pwd)"
-	@echo "Listing package directory contents:"
-	@ls -la $(PACKAGE_ROOT)
-	
-	@if [ ! -d "$(PACKAGE_ROOT)" ]; then \
-		echo "ERROR: Package root directory does not exist: $(PACKAGE_ROOT)"; \
-		exit 1; \
-	fi
-	
-	@test -f $(PACKAGE_ROOT)/crossplane.yaml || (echo "ERROR: crossplane.yaml not found in $(PACKAGE_ROOT)" && exit 1)
-	
+	@echo "🔍 Packaging Provider for Architecture: $*"
+	@echo "📂 Package Root: $(PACKAGE_ROOT)"
+	@echo "🌍 Current Directory: $(shell pwd)"
+
+	@mkdir -p $(PACKAGE_ROOT)/_output
+	@mkdir -p $(PACKAGE_ROOT)/temp
+
+	@test -f $(PACKAGE_ROOT)/crossplane.yaml || (echo "❌ ERROR: crossplane.yaml not found" && exit 1)
+
+	@cp $(PACKAGE_ROOT)/crossplane.yaml $(PACKAGE_ROOT)/temp/crossplane.yaml
+	@sed -i 's|$${REGISTRY_IMAGE}|$(REGISTRY)/$(PROJECT_NAME)-$*|g' $(PACKAGE_ROOT)/temp/crossplane.yaml
+	@sed -i 's|$${VERSION}|$(VERSION)|g' $(PACKAGE_ROOT)/temp/crossplane.yaml
+
 	@cd $(PACKAGE_ROOT) && \
-		REGISTRY_IMAGE=$(REGISTRY)/$(PROJECT_NAME)-$* \
-		VERSION=$(VERSION) \
-		envsubst < crossplane.yaml > crossplane.yaml.tmp && \
-		mv crossplane.yaml.tmp crossplane.yaml && \
 		crossplane xpkg build \
-			--package-root . \
+			--package-root temp \
 			--embed-runtime-image=$(REGISTRY)/$(PROJECT_NAME)-$*:$(VERSION) \
-			-o $(OUTPUT_DIR)/$(PROJECT_NAME)-$*.xpkg
+			-o $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$*.xpkg || \
+		(echo "❌ Packaging failed" && exit 1)
+
+	@test -f $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$*.xpkg || \
+		(echo "❌ Package file not created" && exit 1)
+
+	@echo "✅ Successfully created package: $(PROJECT_NAME)-$*.xpkg"

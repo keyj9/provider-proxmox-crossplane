@@ -77,3 +77,12 @@ jobs:
           ls -la _output/verify/
           echo "Package.yaml contents:"
           cat _output/verify/package.yaml
+
+      - name: Debug target for package creation
+        if: always()
+        run: |
+          echo "🔍 Debugging Package Creation"
+          echo "Environment Variables:"
+          env | grep -E "PACKAGE_ROOT|REGISTRY|VERSION|PROJECT_NAME"
+          echo "Directory Structure:"
+          tree $(PACKAGE_ROOT)

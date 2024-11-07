@@ -44,3 +44,12 @@ verify:
 		tar xf ../$(PROJECT_NAME)-$(TARGETARCH).xpkg && \
 		test -f package.yaml || (echo "package.yaml missing" && exit 1)
 	@$(OK) package verified
+
+# Debug target for package creation
+.PHONY: package-debug
+package-debug:
+	@echo "🔍 Debugging Package Creation"
+	@echo "Environment Variables:"
+	@env | grep -E "PACKAGE_ROOT|REGISTRY|VERSION|PROJECT_NAME"
+	@echo "Directory Structure:"
+	@tree $(PACKAGE_ROOT)
