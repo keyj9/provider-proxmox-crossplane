@@ -6,6 +6,9 @@ ARG TARGETOS
 ARG TARGETARCH
 
 COPY bin/${TARGETOS}_${TARGETARCH}/provider /usr/local/bin/provider
+COPY apis/ /apis/
+COPY internal/ /internal/
+COPY cmd/ /cmd/
 
 ENV USER_ID=65532
 USER ${USER_ID}
