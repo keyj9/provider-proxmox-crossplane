@@ -1,5 +1,3 @@
-# cluster/images/provider-proxmox-crossplane/Makefile
-
 include ../../../build/makelib/common.mk
 include ../../../build/makelib/imagelight.mk
 
@@ -31,29 +29,13 @@ img.publish:
 
 .PHONY: package
 package.%:
-	@echo "🔍 Packaging Provider for Architecture: $*"
-	@echo "📂 Package Root: $(PACKAGE_ROOT)"
-	@echo "🌍 Current Directory: $(shell pwd)"
-
-	@mkdir -p $(PACKAGE_ROOT)/_output
-	@mkdir -p $(PACKAGE_ROOT)/temp
-
-	@test -f $(PACKAGE_ROOT)/crossplane.yaml || (echo "❌ ERROR: crossplane.yaml not found" && exit 1)
-
-	@cp $(PACKAGE_ROOT)/crossplane.yaml $(PACKAGE_ROOT)/temp/crossplane.yaml
+	@$(INFO) packaging provider for architecture: $*
+	@mkdir -p $(PACKAGE_ROOT)/_output $(PACKAGE_ROOT)/temp
+	@cp $(PACKAGE_ROOT)/crossplane.yaml $(PACKAGE_ROOT)/temp/
 	@sed -i 's|$${REGISTRY_IMAGE}|$(REGISTRY)/$(PROJECT_NAME)-$*|g' $(PACKAGE_ROOT)/temp/crossplane.yaml
 	@sed -i 's|$${VERSION}|$(VERSION)|g' $(PACKAGE_ROOT)/temp/crossplane.yaml
-
-	@echo "📦 Building package with crossplane xpkg..."
-	@cd $(PACKAGE_ROOT) && \
-		crossplane xpkg build \
-			--package-root temp \
-			--embed-runtime-image=$(REGISTRY)/$(PROJECT_NAME)-$*:$(VERSION) \
-			-o $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$*.xpkg || \
-		(echo "❌ Packaging failed" && exit 1)
-
-	@echo "🔍 Verifying package..."
-	@crossplane xpkg inspect $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$*.xpkg || \
-		(echo "❌ Package verification failed" && exit 1)
-
-	@echo "✅ Successfully created and verified package: $(PROJECT_NAME)-$*.xpkg"
+	@cd $(PACKAGE_ROOT) && crossplane xpkg build \
+		--package-root temp \
+		--embed-runtime-image=$(REGISTRY)/$(PROJECT_NAME)-$*:$(VERSION) \
+		-o $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$*.xpkg
+	@$(OK) package built for $*

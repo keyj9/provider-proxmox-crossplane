@@ -61,23 +61,11 @@ jobs:
           make image.build
           make image.publish
 
-      - name: Build Package
+      - name: Build and Verify Package
         run: |
-          pwd
-          ls -la package
-          mkdir -p _output
           make package PACKAGE_ROOT=$(pwd)/package
-          make verify
+          make verify PACKAGE_ROOT=$(pwd)/package
 
-      - name: Debug Package Info
-        if: always()
-        run: |
-          echo "📦 Package Information:"
-          crossplane xpkg inspect _output/verify/$(PROJECT_NAME)-$(TARGETARCH).xpkg
-
-      - name: Push Package to OCI Registry
+      - name: Push Package
         if: success()
-        run: |
-          crossplane xpkg push \
-            _output/verify/$(PROJECT_NAME)-$(TARGETARCH).xpkg \
-            $(REGISTRY)/$(PROJECT_NAME)-xpkg:$(VERSION)-$(TARGETARCH)
+        run: make package.push PACKAGE_ROOT=$(pwd)/package

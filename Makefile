@@ -38,16 +38,19 @@ package:
 .PHONY: verify
 verify:
 	@$(INFO) verifying package
-	@mkdir -p _output/verify
-	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/verify/
-	@crossplane xpkg inspect _output/verify/$(PROJECT_NAME)-$(TARGETARCH).xpkg
+	@crossplane xpkg inspect $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg
 	@$(OK) package verified
+
+.PHONY: package.push
+package.push:
+	@$(INFO) pushing package to registry
+	@crossplane xpkg push \
+		$(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg \
+		$(REGISTRY)/$(PROJECT_NAME)-xpkg:$(VERSION)-$(TARGETARCH)
+	@$(OK) package pushed
 
 .PHONY: package-debug
 package-debug:
-	@echo "🔍 Debugging Package Creation"
-	@echo "Environment Variables:"
-	@env | grep -E "PACKAGE_ROOT|REGISTRY|VERSION|PROJECT_NAME"
-	@echo "Directory Structure:"
-	@tree $(PACKAGE_ROOT)
+	@$(INFO) debugging package
 	@crossplane xpkg inspect $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg
+	@$(OK) package debugged
