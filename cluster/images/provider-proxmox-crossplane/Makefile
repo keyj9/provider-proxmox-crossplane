@@ -45,9 +45,9 @@ package.%:
 
 	@test -f $(PACKAGE_ROOT)/crossplane.yaml || (echo "❌ ERROR: crossplane.yaml not found" && exit 1)
 
-	@cp $(PACKAGE_ROOT)/crossplane.yaml $(PACKAGE_ROOT)/temp/crossplane.yaml
-	@sed -i 's|$${REGISTRY_IMAGE}|$(REGISTRY)/$(PROJECT_NAME)-$*|g' $(PACKAGE_ROOT)/temp/crossplane.yaml
-	@sed -i 's|$${VERSION}|$(VERSION)|g' $(PACKAGE_ROOT)/temp/crossplane.yaml
+	@cp $(PACKAGE_ROOT)/crossplane.yaml $(PACKAGE_ROOT)/temp/package.yaml
+	@sed -i 's|$${REGISTRY_IMAGE}|$(REGISTRY)/$(PROJECT_NAME)-$*|g' $(PACKAGE_ROOT)/temp/package.yaml
+	@sed -i 's|$${VERSION}|$(VERSION)|g' $(PACKAGE_ROOT)/temp/package.yaml
 
 	@cd $(PACKAGE_ROOT) && \
 		crossplane xpkg build \
