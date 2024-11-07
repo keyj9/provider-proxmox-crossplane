@@ -38,7 +38,7 @@ package:
 	@echo "Contents of OUTPUT_DIR directory:"
 	@echo "OUTPUT_DIR: $(OUTPUT_DIR)"
 	@ls -la $(OUTPUT_DIR)
-	@$(MAKE) -C cluster/images/provider-proxm
+	@$(MAKE) -C cluster/images/provider-proxmox-crossplane package.$(TARGETARCH)
 	ox-crossplane package.$(TARGETARCH)
 	@$(OK) building provider package
 
