@@ -77,11 +77,11 @@ jobs:
           make save-artifacts
 
           # Verify the contents of the air-gapped directory
-          echo "Contents of provider-artifacts/_output/air-gapped/:"
-          ls -la provider-artifacts/_output/air-gapped/
+          echo "Contents of _output/air-gapped/:"
+          ls -la _output/air-gapped/
 
           # Archive the artifacts for uploading
-          cd provider-artifacts && tar czf ../provider-artifacts.tar.gz .
+          cd _output && tar czf ../provider-artifacts.tar.gz air-gapped/
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
