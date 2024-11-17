@@ -7,7 +7,7 @@ TARGETOS ?= linux
 TARGETARCH ?= amd64
 
 .PHONY: img.build
-img.build:
+img.build: package.prepare
 	@$(INFO) docker build $(IMAGE) for $(TARGETARCH)
 	@mkdir -p $(IMAGE_TEMP_DIR)
 	@mkdir -p $(IMAGE_TEMP_DIR)/third_party
