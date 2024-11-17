@@ -63,6 +63,8 @@ jobs:
           make image.build
           make image.publish
           make package
+          echo "Checking package location:"
+          ls -la package/_output/
           make package.push
 
       - name: Save Artifacts for Air-gapped Environment
