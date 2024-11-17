@@ -38,15 +38,16 @@ img.publish:
 .PHONY: package.%
 package.%:
 	@$(INFO) packaging provider for architecture: $*
-	@mkdir -p $(PACKAGE_ROOT)/_output $(PACKAGE_ROOT)/temp/crds
+	@mkdir -p $(PACKAGE_ROOT)/_output $(PACKAGE_ROOT)/temp
+	@mkdir -p $(PACKAGE_ROOT)/temp/crds
 	@cp $(PACKAGE_ROOT)/crossplane.yaml $(PACKAGE_ROOT)/temp/
-	@cp $(PACKAGE_ROOT)/crds/* $(PACKAGE_ROOT)/temp/crds/ || true
+	@cp $(PACKAGE_ROOT)/crds/* $(PACKAGE_ROOT)/temp/crds/
 	@sed -i 's|$${REGISTRY_IMAGE}|$(REGISTRY)/$(PROJECT_NAME)-$*|g' $(PACKAGE_ROOT)/temp/crossplane.yaml
 	@sed -i 's|$${VERSION}|$(VERSION)|g' $(PACKAGE_ROOT)/temp/crossplane.yaml
 	@cd $(PACKAGE_ROOT) && crossplane xpkg build \
 		--package-root temp \
 		--embed-runtime-image=$(REGISTRY)/$(PROJECT_NAME)-$*:$(VERSION) \
-		-o _output/$(PROJECT_NAME)-$*.xpkg
+		-o $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$*.xpkg
 	@$(OK) package built for $*
 
 .PHONY: package
