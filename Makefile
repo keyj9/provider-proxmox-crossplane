@@ -48,7 +48,7 @@ package.prepare:
 .PHONY: package
 package: package.prepare
 	@$(INFO) building provider package
-	@$(MAKE) -C cluster/images/provider-proxmox-crossplane package.$(TARGETARCH)
+	@$(MAKE) -C cluster/images/provider-proxmox-crossplane package.$(TARGETARCH) PACKAGE_ROOT=$(abspath package)
 	@$(OK) provider package built
 
 # Push Crossplane package
@@ -60,7 +60,7 @@ package.push:
 		$(REGISTRY)/$(PROJECT_NAME):$(VERSION)-$(TARGETARCH)
 	@$(OK) package pushed
 
-# Save artifacts for air-gapped environment#
+# Save artifacts for air-gapped environment
 .PHONY: save-artifacts
 save-artifacts:
 	@$(INFO) saving artifacts

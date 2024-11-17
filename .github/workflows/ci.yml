@@ -50,7 +50,10 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Prepare Package Structure
-        run: make package.prepare
+        run: |
+          make package.prepare
+          ls -la package/
+          ls -la package/crds/
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
