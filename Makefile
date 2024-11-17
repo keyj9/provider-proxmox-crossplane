@@ -13,7 +13,13 @@ include build/makelib/common.mk
 include build/makelib/imagelight.mk
 
 # Build targets
-.PHONY: build.init build.provider build.artifacts publish
+.PHONY: build.init build.provider build.artifacts publish img.build img.publish
+
+img.build:
+	@$(MAKE) -C cluster/images/provider-proxmox-crossplane img.build
+
+img.publish:
+	@$(MAKE) -C cluster/images/provider-proxmox-crossplane img.publish
 
 build.init:
 	@echo "Initializing build..."
@@ -22,8 +28,7 @@ build.provider: build.init
 	@echo "Building crossplane provider..."
 
 build.artifacts:
-	@$(MAKE) -C cluster/images/provider-proxmox-crossplane img.build
 	@$(MAKE) -C cluster/images/provider-proxmox-crossplane package.$(TARGETARCH)
 
 publish: build.provider build.artifacts
-	@$(MAKE) -C cluster/images/provider-proxmox-crossplane img.publish
+	@$(MAKE) img.publish
