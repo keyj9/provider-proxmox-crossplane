@@ -44,24 +44,23 @@ FROM alpine:3.20.3
 # Install necessary packages
 RUN apk --no-cache add ca-certificates
 
-# Create necessary directories
+# Air-gapped environment setup
 RUN mkdir -p /terraform.d/plugins/localhost/telmate/proxmox/1.0.0/linux_amd64/
 
-# Copy the Crossplane provider binary
+# Copy binaries
 COPY --from=crossplane-builder /provider /usr/local/bin/provider
-
-# Copy the Terraform provider binary
-COPY --from=terraform-builder /workspace/terraform-provider-proxmox/bin/terraform-provider-proxmox /terraform.d/plugins/localhost/telmate/proxmox/1.0.0/linux_amd64/
+COPY --from=terraform-builder /workspace/terraform-provider-proxmox/bin/terraform-provider-proxmox \
+    /terraform.d/plugins/localhost/telmate/proxmox/1.0.0/linux_amd64/
 
 # Set permissions
 RUN chmod +x /usr/local/bin/provider && \
     chmod +x /terraform.d/plugins/localhost/telmate/proxmox/1.0.0/linux_amd64/terraform-provider-proxmox
 
-# Set environment variables for air-gapped environment
+# Air-gapped environment variables
 ENV TERRAFORM_PROVIDER_PATH=/terraform.d/plugins
+ENV PROVIDER_STRICT_MODE=true
 ENV USER_ID=65532
-USER ${USER_ID}
 
-EXPOSE 8080
+USER ${USER_ID}
 ENTRYPOINT ["/usr/local/bin/provider"]
 #

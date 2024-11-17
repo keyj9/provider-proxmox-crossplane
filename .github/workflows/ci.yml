@@ -72,3 +72,13 @@ jobs:
           name: provider-artifacts
           path: provider-artifacts.tar.gz
           retention-days: 5
+
+      - name: Prepare Package Structure
+        run: |
+          make -C cluster/images/provider-proxmox-crossplane package.prepare
+
+      - name: Validate Air-gapped Requirements
+        run: |
+          docker inspect $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) \
+            --format '{{ range .Config.Env }}{{ println . }}{{ end }}' | \
+            grep -q TERRAFORM_PROVIDER_PATH
