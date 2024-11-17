@@ -2,7 +2,7 @@
 /bin/
 
 # Exclude build output
-/_output/
+#/_output/
 
 # Include essential generated files
 !/package/_output/*.xpkg
