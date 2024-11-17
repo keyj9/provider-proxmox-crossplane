@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64]  # Start with just amd64 to get it working
+        arch: [amd64]
     permissions:
       contents: read
       packages: write
@@ -49,18 +49,19 @@ jobs:
 
       - name: Build and Push
         run: |
-          # Removed 'make build-provider' as it's now built inside Docker
-          make -C cluster/images/provider-proxmox-crossplane img.build
-          make -C cluster/images/provider-proxmox-crossplane img.publish
-          make package PACKAGE_ROOT=$(pwd)/package
-          make package.push PACKAGE_ROOT=$(pwd)/package
+          make build-provider
+          make build-terraform-provider
+          make image.build
+          make image.publish
+          make package
+          make package.push
 
-      - name: Save Package
+      - name: Save Artifacts
+        run: make save-artifacts
+
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: provider-package-${{ matrix.arch }}
-          path: package/_output/*.xpkg
+          name: provider-artifacts
+          path: _output/artifacts/*
           retention-days: 5
-
-      - name: Check crossplane.yaml
-        run: cat package/temp/crossplane.yaml

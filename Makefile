@@ -1,34 +1,63 @@
 # Setup Project
 PROJECT_NAME ?= provider-proxmox-crossplane
-PROJECT_REPO ?= github.com/keyj9/$(PROJECT_NAME)
-REGISTRY ?= ghcr.io/keyj9
+PROJECT_REPO ?= github.com/joekky/$(PROJECT_NAME)
+REGISTRY ?= ghcr.io/joekky
 VERSION ?= $(shell git describe --tags --always --dirty)
-OUTPUT_DIR ?= bin
-PACKAGE_ROOT ?= package
+OUTPUT_DIR ?= _output
 TARGETOS ?= linux
 TARGETARCH ?= amd64
 
-# Include build tools
-include build/makelib/common.mk
-include build/makelib/imagelight.mk
+# Include essential build tools
+-include build/makelib/common.mk
+-include build/makelib/output.mk
+-include build/makelib/golang.mk
 
-# Build targets
-.PHONY: build.init build.provider build.artifacts publish img.build img.publish
+# Build provider binary
+.PHONY: build-provider
+build-provider:
+	@$(INFO) building Crossplane provider binary
+	@mkdir -p bin/$(TARGETOS)_$(TARGETARCH)
+	@CGO_ENABLED=0 GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) \
+		go build -o bin/$(TARGETOS)_$(TARGETARCH)/provider ./cmd/provider
+	@$(OK) Crossplane provider built
 
-img.build:
+.PHONY: build-terraform-provider
+build-terraform-provider:
+	@$(INFO) building Terraform Proxmox provider
+	@cd third_party/terraform-provider-proxmox && \
+		CGO_ENABLED=0 GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) make build
+	@$(OK) Terraform Proxmox provider built
+
+# Build and publish Docker image
+.PHONY: image.build
+image.build: build-provider build-terraform-provider
 	@$(MAKE) -C cluster/images/provider-proxmox-crossplane img.build
 
-img.publish:
+.PHONY: image.publish
+image.publish:
 	@$(MAKE) -C cluster/images/provider-proxmox-crossplane img.publish
 
-build.init:
-	@echo "Initializing build..."
-
-build.provider: build.init
-	@echo "Building crossplane provider..."
-
-build.artifacts:
+# Package Crossplane provider
+.PHONY: package
+package:
+	@$(INFO) building provider package
 	@$(MAKE) -C cluster/images/provider-proxmox-crossplane package.$(TARGETARCH)
+	@$(OK) building provider package
 
-publish: build.provider build.artifacts
-	@$(MAKE) img.publish
+# Push Crossplane package
+.PHONY: package.push
+package.push:
+	@$(INFO) pushing package to registry
+	@crossplane xpkg push \
+		-f $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg \
+		$(REGISTRY)/$(PROJECT_NAME):$(VERSION)-$(TARGETARCH)
+	@$(OK) package pushed
+
+# Save artifacts for air-gapped environment
+.PHONY: save-artifacts
+save-artifacts:
+	@$(INFO) saving artifacts
+	@mkdir -p _output/artifacts
+	@docker save $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) > _output/artifacts/provider-image-$(TARGETARCH).tar
+	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/artifacts/
+	@$(OK) artifacts saved
