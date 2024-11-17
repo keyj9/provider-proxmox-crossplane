@@ -55,8 +55,9 @@ RUN chmod +x /usr/local/bin/provider && \
 # Air-gapped environment configuration
 ENV TERRAFORM_PROVIDER_PATH=/terraform.d/plugins
 ENV TERRAFORM_PROVIDER_SOURCE=registry.terraform.io/telmate/proxmox
+ENV TERRAFORM_PROVIDER_VERSION=1.0.0
 ENV USER_ID=65532
 USER ${USER_ID}
 
-ENTRYPOINT ["/usr/local/bin/provider", "--terraform-provider-source=registry.terraform.io/telmate/proxmox"]
+ENTRYPOINT ["/usr/local/bin/provider", "--terraform-provider-source=registry.terraform.io/telmate/proxmox", "--terraform-provider-version=1.0.0"]
 #
