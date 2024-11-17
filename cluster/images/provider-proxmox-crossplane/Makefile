@@ -13,6 +13,9 @@ img.build:
 	@mkdir -p $(IMAGE_TEMP_DIR)/third_party
 	# Copy provider source files
 	@cp -R ../../../cmd $(IMAGE_TEMP_DIR)/ || $(FAIL)
+	@cp -R ../../../apis $(IMAGE_TEMP_DIR)/ || $(FAIL)
+	@cp -R ../../../internal $(IMAGE_TEMP_DIR)/ || $(FAIL)
+	@cp -R ../../../config $(IMAGE_TEMP_DIR)/ || $(FAIL)
 	# Copy Terraform provider
 	@cp -R ../../../third_party/terraform-provider-proxmox $(IMAGE_TEMP_DIR)/third_party/ || $(FAIL)
 	@cp ../../../go.mod ../../../go.sum $(IMAGE_TEMP_DIR)/ || $(FAIL)
