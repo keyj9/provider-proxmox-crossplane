@@ -49,7 +49,7 @@ jobs:
 
       - name: Build and Push
         run: |
-          make build-provider
+          # Removed 'make build-provider' as it's now built inside Docker
           make image.build
           make image.publish
           make package PACKAGE_ROOT=$(pwd)/package

@@ -9,8 +9,8 @@ TARGETARCH ?= amd64
 .PHONY: img.build
 img.build:
 	@$(INFO) docker build $(IMAGE) for $(TARGETARCH)
-	@mkdir -p $(IMAGE_TEMP_DIR)/bin/$(TARGETOS)_$(TARGETARCH)
-	@cp ../../../bin/$(TARGETOS)_$(TARGETARCH)/provider $(IMAGE_TEMP_DIR)/bin/$(TARGETOS)_$(TARGETARCH)/ || $(FAIL)
+	@mkdir -p $(IMAGE_TEMP_DIR)/third_party/terraform-provider-proxmox
+	@cp -R ../../../third_party/terraform-provider-proxmox $(IMAGE_TEMP_DIR)/third_party/ || $(FAIL)
 	@cp Dockerfile $(IMAGE_TEMP_DIR)/ || $(FAIL)
 	@docker buildx build \
 		--platform $(TARGETOS)/$(TARGETARCH) \

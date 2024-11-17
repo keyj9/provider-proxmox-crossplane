@@ -1,3 +1,6 @@
+[submodule "build"]
+	path = build
+	url = https://github.com/crossplane/build
 [submodule "third_party/terraform-provider-proxmox"]
 	path = third_party/terraform-provider-proxmox
-	url = https://github.com/joekky/terraform-provider-proxmox.git
+	url = https://github.com/your-org/terraform-provider-proxmox
