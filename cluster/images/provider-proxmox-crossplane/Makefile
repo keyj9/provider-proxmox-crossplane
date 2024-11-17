@@ -7,7 +7,7 @@ TARGETOS ?= linux
 TARGETARCH ?= amd64
 
 .PHONY: img.build
-img.build: package.prepare
+img.build:
 	@$(INFO) docker build $(IMAGE) for $(TARGETARCH)
 	@mkdir -p $(IMAGE_TEMP_DIR)
 	@mkdir -p $(IMAGE_TEMP_DIR)/third_party
@@ -54,10 +54,9 @@ EOF
 	@$(OK) package structure prepared
 
 .PHONY: package.%
-package.%: package.prepare
+package.%:
 	@$(INFO) packaging provider for architecture: $*
-	@mkdir -p $(PACKAGE_ROOT)/_output $(PACKAGE_ROOT)/temp
-	@mkdir -p $(PACKAGE_ROOT)/temp/crds
+	@mkdir -p $(PACKAGE_ROOT)/_output $(PACKAGE_ROOT)/temp/crds
 	@cp $(PACKAGE_ROOT)/crossplane.yaml $(PACKAGE_ROOT)/temp/
 	@cp $(PACKAGE_ROOT)/crds/* $(PACKAGE_ROOT)/temp/crds/ || true
 	@sed -i 's|\$${REGISTRY_IMAGE}|$(REGISTRY)/$(PROJECT_NAME)-$*|g' $(PACKAGE_ROOT)/temp/crossplane.yaml
@@ -76,3 +75,7 @@ validate-airgapped:
 	@docker run --rm $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) \
 		ls -la /usr/local/bin/provider
 	@$(OK) air-gapped validation complete
+
+.PHONY: package
+package:
+	@$(MAKE) package.$(TARGETARCH)

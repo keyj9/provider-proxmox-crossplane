@@ -38,12 +38,19 @@ image.build: build-provider build-terraform-provider
 image.publish:
 	@$(MAKE) -C cluster/images/provider-proxmox-crossplane img.publish
 
-# Package Crossplane provider
+# Package preparation and building
+.PHONY: package.prepare
+package.prepare:
+	@$(INFO) preparing package structure
+	@mkdir -p $(PACKAGE_ROOT)/crds
+	@$(MAKE) -C cluster/images/provider-proxmox-crossplane package.prepare
+	@$(OK) package structure prepared
+
 .PHONY: package
-package:
+package: package.prepare
 	@$(INFO) building provider package
 	@$(MAKE) -C cluster/images/provider-proxmox-crossplane package.$(TARGETARCH)
-	@$(OK) building provider package
+	@$(OK) provider package built
 
 # Push Crossplane package
 .PHONY: package.push

@@ -50,12 +50,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Prepare Package Structure
-        run: |
-          mkdir -p package/crds
-          make -C cluster/images/provider-proxmox-crossplane package.prepare
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        run: make package.prepare
 
       - name: Build and Push
         run: |
