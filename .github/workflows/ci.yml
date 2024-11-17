@@ -67,10 +67,8 @@ jobs:
 
       - name: Save Artifacts for Air-gapped Environment
         run: |
-          mkdir -p _output/air-gapped
-          docker save ${REGISTRY}/${PROJECT_NAME}-${TARGETARCH}:${VERSION} > _output/air-gapped/provider-image.tar
-          cp package/_output/${PROJECT_NAME}-${TARGETARCH}.xpkg _output/air-gapped/
-          tar czf provider-artifacts.tar.gz _output/air-gapped/
+          cp package/_output/${PROJECT_NAME}-${TARGETARCH}.xpkg provider-artifacts/
+          tar czf provider-artifacts.tar.gz provider-artifacts/
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
