@@ -18,7 +18,7 @@ jobs:
     env:
       PROJECT_NAME: provider-proxmox-crossplane
       REGISTRY: ghcr.io/${{ github.repository }}
-      VERSION: ${{ github.ref_name }}
+      VERSION: v0.1.0
       TARGETOS: linux
       TARGETARCH: ${{ matrix.arch }}
       PACKAGE_ROOT: package
