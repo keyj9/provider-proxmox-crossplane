@@ -1,59 +1,34 @@
 # Setup Project
 PROJECT_NAME ?= provider-proxmox-crossplane
-PROJECT_REPO ?= github.com/joekky/$(PROJECT_NAME)
-REGISTRY ?= ghcr.io/joekky
+PROJECT_REPO ?= github.com/keyj9/$(PROJECT_NAME)
+REGISTRY ?= ghcr.io/keyj9
 VERSION ?= $(shell git describe --tags --always --dirty)
-OUTPUT_DIR ?= _output
+OUTPUT_DIR ?= bin
+PACKAGE_ROOT ?= package
 TARGETOS ?= linux
 TARGETARCH ?= amd64
 
-# Include essential build tools
--include build/makelib/common.mk
--include build/makelib/output.mk
--include build/makelib/golang.mk
+# Include build tools
+include build/makelib/common.mk
+include build/makelib/imagelight.mk
 
-.PHONY: build-provider
-build-provider:
-	@$(INFO) building provider binary
-	@mkdir -p bin/$(TARGETOS)_$(TARGETARCH)
-	@CGO_ENABLED=0 GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) \
-		go build -o bin/$(TARGETOS)_$(TARGETARCH)/provider ./cmd/provider
-	@$(OK) building provider binary
+# Build targets
+.PHONY: provider.build build.init build.provider build.artifacts publish
 
-.PHONY: image.build
-image.build: build-provider
+provider.build:
+	@echo "Building terraform provider..."
+	@cd third_party/terraform-provider-proxmox && \
+	CGO_ENABLED=0 go build -trimpath -o ../../$(OUTPUT_DIR)/$(TARGETOS)_$(TARGETARCH)/provider
+
+build.init: provider.build
+	@mkdir -p $(OUTPUT_DIR)/$(TARGETOS)_$(TARGETARCH)
+
+build.provider: build.init
+	@echo "Building crossplane provider..."
+
+build.artifacts:
 	@$(MAKE) -C cluster/images/provider-proxmox-crossplane img.build
-
-.PHONY: image.publish
-image.publish:
-	@$(MAKE) -C cluster/images/provider-proxmox-crossplane img.publish
-
-.PHONY: package
-package:
-	@$(INFO) building provider package
-	@echo "PACKAGE_ROOT is set to: $(PACKAGE_ROOT)"
-	@echo "Contents of PACKAGE_ROOT directory:"
-	@ls -la $(PACKAGE_ROOT)
-	@mkdir -p $(OUTPUT_DIR)
-	@echo "Contents of OUTPUT_DIR directory:"
-	@echo "OUTPUT_DIR: $(OUTPUT_DIR)"
-	@ls -la $(OUTPUT_DIR)
 	@$(MAKE) -C cluster/images/provider-proxmox-crossplane package.$(TARGETARCH)
-	@$(OK) building provider package
 
-.PHONY: package.push
-package.push:
-	@$(INFO) pushing package to registry
-	@crossplane xpkg push \
-		-f $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg \
-		$(REGISTRY)/$(PROJECT_NAME):v0.1.0-$(TARGETARCH)
-	@$(OK) package pushed
-
-# Save artifacts to downloadable files
-.PHONY: save-artifacts
-save-artifacts:
-	@$(INFO) saving artifacts
-	@mkdir -p _output/artifacts
-	@docker save $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) > _output/artifacts/provider-image-$(TARGETARCH).tar
-	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/artifacts/
-	@$(OK) artifacts saved
+publish: build.provider build.artifacts
+	@$(MAKE) -C cluster/images/provider-proxmox-crossplane img.publish

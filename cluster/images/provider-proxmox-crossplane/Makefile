@@ -1,5 +1,5 @@
-include ../../../build/makelib/common.mk
-include ../../../build/makelib/imagelight.mk
+include build/makelib/common.mk
+include build/makelib/imagelight.mk
 
 IMAGE = $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH)
 PLATFORMS ?= linux_amd64 linux_arm64
@@ -10,7 +10,7 @@ TARGETARCH ?= amd64
 img.build:
 	@$(INFO) docker build $(IMAGE) for $(TARGETARCH)
 	@mkdir -p $(IMAGE_TEMP_DIR)/bin/$(TARGETOS)_$(TARGETARCH)
-	@cp ../../../bin/$(TARGETOS)_$(TARGETARCH)/provider $(IMAGE_TEMP_DIR)/bin/$(TARGETOS)_$(TARGETARCH)/ || $(FAIL)
+	@cp bin/$(TARGETOS)_$(TARGETARCH)/provider $(IMAGE_TEMP_DIR)/bin/$(TARGETOS)_$(TARGETARCH)/ || $(FAIL)
 	@cp Dockerfile $(IMAGE_TEMP_DIR)/ || $(FAIL)
 	@docker buildx build \
 		--platform $(TARGETOS)/$(TARGETARCH) \

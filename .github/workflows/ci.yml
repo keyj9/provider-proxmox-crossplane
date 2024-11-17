@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64]  # Start with just amd64 to get it working
+        arch: [amd64]  # You can add other architectures if needed
     permissions:
       contents: read
       packages: write
@@ -47,12 +47,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and Push
+      - name: Build and Push Docker Image
         run: |
-          make build-provider
-          make image.build
-          make image.publish
+          docker buildx build \
+            --platform ${{ env.TARGETOS }}/{{ env.TARGETARCH }} \
+            --build-arg TARGETOS=${{ env.TARGETOS }} \
+            --build-arg TARGETARCH=${{ env.TARGETARCH }} \
+            -t ${{ env.REGISTRY }}/${{ env.PROJECT_NAME }}:${{ env.VERSION }}-${{ matrix.arch }} \
+            --push \
+            cluster/images/provider-proxmox-crossplane
+
+      - name: Build Provider Package
+        run: |
           make package PACKAGE_ROOT=$(pwd)/package
+
+      - name: Push Provider Package
+        run: |
           make package.push PACKAGE_ROOT=$(pwd)/package
 
       - name: Save Package
