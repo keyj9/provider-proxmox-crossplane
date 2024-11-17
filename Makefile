@@ -43,7 +43,6 @@ image.publish:
 package.prepare:
 	@$(INFO) preparing package structure
 	@mkdir -p $(PACKAGE_ROOT)/crds
-	@$(MAKE) -C cluster/images/provider-proxmox-crossplane package.prepare
 	@$(OK) package structure prepared
 
 .PHONY: package

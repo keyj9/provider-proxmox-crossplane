@@ -52,6 +52,9 @@ jobs:
       - name: Prepare Package Structure
         run: make package.prepare
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build and Push
         run: |
           make image.build

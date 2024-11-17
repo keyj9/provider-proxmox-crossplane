@@ -35,24 +35,6 @@ img.publish:
 	@docker tag $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):latest
 	@docker push $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):latest
 
-.PHONY: package.prepare
-package.prepare:
-	@$(INFO) preparing package structure
-	@mkdir -p $(PACKAGE_ROOT)/crds
-	@if [ ! -f $(PACKAGE_ROOT)/crossplane.yaml ]; then \
-		cat > $(PACKAGE_ROOT)/crossplane.yaml << EOF
-apiVersion: meta.pkg.crossplane.io/v1
-kind: Provider
-metadata:
-  name: provider-proxmox-crossplane
-spec:
-  controller:
-    image: \$${REGISTRY_IMAGE}:\$${VERSION}
-  ignoreCrossplaneConstraints: true
-EOF
-	fi
-	@$(OK) package structure prepared
-
 .PHONY: package.%
 package.%:
 	@$(INFO) packaging provider for architecture: $*
