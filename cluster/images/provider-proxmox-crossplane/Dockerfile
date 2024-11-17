@@ -12,8 +12,6 @@ WORKDIR /workspace
 
 # Copy the Crossplane provider source code
 COPY cmd/ /workspace/cmd/
-COPY pkg/ /workspace/pkg/
-COPY apis/ /workspace/apis/
 COPY go.mod go.sum /workspace/
 
 # Build the Crossplane provider
