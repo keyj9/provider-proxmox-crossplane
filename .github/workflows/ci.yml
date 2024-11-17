@@ -50,7 +50,7 @@ jobs:
       - name: Build and Push Docker Image
         run: |
           docker buildx build \
-            --platform ${{ env.TARGETOS }}/{{ env.TARGETARCH }} \
+            --platform ${{ env.TARGETOS }}/${{ env.TARGETARCH }} \
             --build-arg TARGETOS=${{ env.TARGETOS }} \
             --build-arg TARGETARCH=${{ env.TARGETARCH }} \
             -t ${{ env.REGISTRY }}/${{ env.PROJECT_NAME }}:${{ env.VERSION }}-${{ matrix.arch }} \
