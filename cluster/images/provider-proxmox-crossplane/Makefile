@@ -35,15 +35,33 @@ img.publish:
 	@docker tag $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):latest
 	@docker push $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):latest
 
-.PHONY: package
-package.%:
+.PHONY: package.prepare
+package.prepare:
+	@$(INFO) preparing package structure
+	@mkdir -p $(PACKAGE_ROOT)/crds
+	@if [ ! -f $(PACKAGE_ROOT)/crossplane.yaml ]; then \
+		cat > $(PACKAGE_ROOT)/crossplane.yaml << EOF
+apiVersion: meta.pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-proxmox-crossplane
+spec:
+  controller:
+    image: \$${REGISTRY_IMAGE}:\$${VERSION}
+  ignoreCrossplaneConstraints: true
+EOF
+	fi
+	@$(OK) package structure prepared
+
+.PHONY: package.%
+package.%: package.prepare
 	@$(INFO) packaging provider for architecture: $*
 	@mkdir -p $(PACKAGE_ROOT)/_output $(PACKAGE_ROOT)/temp
 	@mkdir -p $(PACKAGE_ROOT)/temp/crds
 	@cp $(PACKAGE_ROOT)/crossplane.yaml $(PACKAGE_ROOT)/temp/
-	@cp $(PACKAGE_ROOT)/crds/* $(PACKAGE_ROOT)/temp/crds/
-	@sed -i 's|$${REGISTRY_IMAGE}|$(REGISTRY)/$(PROJECT_NAME)-$*|g' $(PACKAGE_ROOT)/temp/crossplane.yaml
-	@sed -i 's|$${VERSION}|$(VERSION)|g' $(PACKAGE_ROOT)/temp/crossplane.yaml
+	@cp $(PACKAGE_ROOT)/crds/* $(PACKAGE_ROOT)/temp/crds/ || true
+	@sed -i 's|\$${REGISTRY_IMAGE}|$(REGISTRY)/$(PROJECT_NAME)-$*|g' $(PACKAGE_ROOT)/temp/crossplane.yaml
+	@sed -i 's|\$${VERSION}|$(VERSION)|g' $(PACKAGE_ROOT)/temp/crossplane.yaml
 	@cd $(PACKAGE_ROOT) && crossplane xpkg build \
 		--package-root temp \
 		--embed-runtime-image=$(REGISTRY)/$(PROJECT_NAME)-$*:$(VERSION) \
