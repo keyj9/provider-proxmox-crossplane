@@ -63,14 +63,24 @@ jobs:
           make image.build
           make image.publish
           make package
-          echo "Checking package location:"
+          echo "Package contents:"
           ls -la package/_output/
+          echo "Image details:"
+          docker images | grep $(PROJECT_NAME)
           make package.push
 
       - name: Save Artifacts for Air-gapped Environment
         run: |
+          # Execute the make target to save both .xpkg and .tar artifacts
+          make save-artifacts
+
+          # Create a directory to collect artifacts
           mkdir -p provider-artifacts
-          cp package/_output/${PROJECT_NAME}-${TARGETARCH}.xpkg provider-artifacts/
+
+          # Copy both the .xpkg and .tar files to the artifacts directory
+          cp _output/artifacts/* provider-artifacts/
+
+          # Archive the artifacts for uploading
           tar czf provider-artifacts.tar.gz provider-artifacts/
 
       - name: Upload Artifacts

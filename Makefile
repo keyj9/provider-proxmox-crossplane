@@ -64,7 +64,6 @@ package.push:
 .PHONY: save-artifacts
 save-artifacts:
 	@$(INFO) saving artifacts
-	@mkdir -p _output/artifacts
-	@docker save $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) > _output/artifacts/provider-image-$(TARGETARCH).tar
-	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/artifacts/
+	@docker save $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) > _output/air-gapped/provider-image.tar
+	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/air-gapped/
 	@$(OK) artifacts saved
