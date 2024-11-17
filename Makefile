@@ -60,7 +60,7 @@ package.push:
 		$(REGISTRY)/$(PROJECT_NAME):$(VERSION)-$(TARGETARCH)
 	@$(OK) package pushed
 
-# Save artifacts for air-gapped environment
+# Save artifacts for air-gapped environment#
 .PHONY: save-artifacts
 save-artifacts:
 	@$(INFO) saving artifacts
