@@ -13,3 +13,4 @@ USER ${USER_ID}
 
 EXPOSE 8080
 ENTRYPOINT ["/usr/local/bin/provider"]
+#
