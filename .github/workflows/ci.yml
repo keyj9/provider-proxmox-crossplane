@@ -69,6 +69,7 @@ jobs:
 
       - name: Save Artifacts for Air-gapped Environment
         run: |
+          mkdir -p provider-artifacts
           cp package/_output/${PROJECT_NAME}-${TARGETARCH}.xpkg provider-artifacts/
           tar czf provider-artifacts.tar.gz provider-artifacts/
 
