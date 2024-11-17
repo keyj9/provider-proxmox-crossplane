@@ -43,10 +43,10 @@ package.%:
 	@cp $(PACKAGE_ROOT)/crds/* $(PACKAGE_ROOT)/temp/crds/ || true
 	@sed -i 's|$${REGISTRY_IMAGE}|$(REGISTRY)/$(PROJECT_NAME)-$*|g' $(PACKAGE_ROOT)/temp/crossplane.yaml
 	@sed -i 's|$${VERSION}|$(VERSION)|g' $(PACKAGE_ROOT)/temp/crossplane.yaml
-	@crossplane xpkg build \
-		--package-root $(PACKAGE_ROOT)/temp \
+	@cd $(PACKAGE_ROOT) && crossplane xpkg build \
+		--package-root temp \
 		--embed-runtime-image=$(REGISTRY)/$(PROJECT_NAME)-$*:$(VERSION) \
-		-o $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$*.xpkg
+		-o _output/$(PROJECT_NAME)-$*.xpkg
 	@$(OK) package built for $*
 
 .PHONY: package
