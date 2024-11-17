@@ -17,8 +17,9 @@ TARGETARCH ?= amd64
 build-provider:
 	@$(INFO) building Crossplane provider binary
 	@mkdir -p bin/$(TARGETOS)_$(TARGETARCH)
+	@go mod vendor
 	@CGO_ENABLED=0 GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) \
-		go build -o bin/$(TARGETOS)_$(TARGETARCH)/provider ./cmd/provider
+		go build -mod=vendor -o bin/$(TARGETOS)_$(TARGETARCH)/provider ./cmd/provider
 	@$(OK) Crossplane provider built
 
 .PHONY: build-terraform-provider

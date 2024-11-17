@@ -12,10 +12,10 @@ WORKDIR /app
 
 # Copy the Crossplane provider source code
 COPY cmd/provider /app/cmd/provider
-COPY main.go go.mod go.sum /app/
+COPY main.go go.mod go.sum vendor /app/
 
 # Build the Crossplane provider
-RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /provider /app/main.go
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -mod=vendor -o /provider /app/main.go
 
 # Build Stage - Build the Terraform Proxmox Provider
 FROM --platform=$BUILDPLATFORM golang:1.21-alpine3.17 AS terraform-builder
