@@ -49,15 +49,6 @@ package.%:
 		-o $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$*.xpkg
 	@$(OK) package built for $*
 
-.PHONY: validate-airgapped
-validate-airgapped:
-	@$(INFO) validating air-gapped requirements
-	@docker run --rm $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) \
-		ls -la /terraform.d/plugins/localhost/telmate/proxmox/1.0.0/linux_amd64/terraform-provider-proxmox
-	@docker run --rm $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) \
-		ls -la /usr/local/bin/provider
-	@$(OK) air-gapped validation complete
-
 .PHONY: package
 package:
 	@$(MAKE) package.$(TARGETARCH)

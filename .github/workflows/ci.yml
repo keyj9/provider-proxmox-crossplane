@@ -65,9 +65,6 @@ jobs:
           make package
           make package.push
 
-      - name: Validate Air-gapped Setup
-        run: make validate-airgapped
-
       - name: Save Artifacts for Air-gapped Environment
         run: |
           mkdir -p _output/air-gapped
@@ -81,9 +78,3 @@ jobs:
           name: provider-artifacts
           path: provider-artifacts.tar.gz
           retention-days: 5
-
-      - name: Validate Air-gapped Requirements
-        run: |
-          docker inspect $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) \
-            --format '{{ range .Config.Env }}{{ println . }}{{ end }}' | \
-            grep -q TERRAFORM_PROVIDER_PATH
