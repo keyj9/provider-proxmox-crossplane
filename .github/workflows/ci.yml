@@ -52,7 +52,9 @@ jobs:
       - name: Prepare Package Structure
         run: |
           make package.prepare
+          echo "Contents of package/:"
           ls -la package/
+          echo "Contents of package/crds/:"
           ls -la package/crds/
 
       - name: Set up Docker Buildx
@@ -66,7 +68,7 @@ jobs:
           echo "Package contents:"
           ls -la package/_output/
           echo "Image details:"
-          docker images | grep $(PROJECT_NAME)
+          docker images | grep $PROJECT_NAME
           make package.push
 
       - name: Save Artifacts for Air-gapped Environment
@@ -74,11 +76,19 @@ jobs:
           # Execute the make target to save both .xpkg and .tar artifacts
           make save-artifacts
 
+          # Verify the contents of the air-gapped directory
+          echo "Contents of _output/air-gapped/:"
+          ls -la _output/air-gapped/
+
           # Create a directory to collect artifacts
           mkdir -p provider-artifacts
 
           # Copy both the .xpkg and .tar files to the artifacts directory
-          cp _output/artifacts/* provider-artifacts/
+          cp _output/air-gapped/* provider-artifacts/
+
+          # Verify the contents of the provider-artifacts directory
+          echo "Contents of provider-artifacts/:"
+          ls -la provider-artifacts/
 
           # Archive the artifacts for uploading
           tar czf provider-artifacts.tar.gz provider-artifacts/
