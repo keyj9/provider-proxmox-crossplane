@@ -75,7 +75,11 @@ jobs:
 
       - name: Prepare Package Structure
         run: |
+          mkdir -p package/crds
           make -C cluster/images/provider-proxmox-crossplane package.prepare
+
+      - name: Validate Air-gapped Setup
+        run: make validate-airgapped
 
       - name: Validate Air-gapped Requirements
         run: |
