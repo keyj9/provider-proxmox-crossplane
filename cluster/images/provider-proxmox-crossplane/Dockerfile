@@ -30,17 +30,13 @@ COPY --from=builder /provider /usr/local/bin/provider
 # Set permissions
 RUN chmod +x /usr/local/bin/provider
 
+# Copy the main application code (if needed)
+COPY . /app
+
 # Set user and entrypoint
 ENV USER_ID=65532
 USER ${USER_ID}
 
 EXPOSE 8080
 ENTRYPOINT ["/usr/local/bin/provider"]
-#
-
-# Copy the main application code
-COPY . /app
-
-# If needed, install dependencies from the submodule
-RUN cd /app/third_party/terraform-provider-proxmox && make install
 #
