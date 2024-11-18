@@ -59,5 +59,5 @@ ENV TERRAFORM_PROVIDER_VERSION=1.0.0
 ENV USER_ID=65532
 USER ${USER_ID}
 
-ENTRYPOINT ["/usr/local/bin/provider", "--terraform-provider-source=registry.terraform.io/telmate/proxmox", "--terraform-provider-version=1.0.0"]
+ENTRYPOINT ["/usr/local/bin/provider", "--terraform-provider-source=registry.terraform.io/telmate/proxmox", "--terraform-provider-version=1.0.0", "--terraform-version=1.3.5"]
 #

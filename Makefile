@@ -12,6 +12,9 @@ TARGETARCH ?= amd64
 -include build/makelib/output.mk
 -include build/makelib/golang.mk
 
+# Define Terraform version with a default value
+TERRAFORM_VERSION ?= 1.3.5
+
 # Build provider binary
 .PHONY: build-provider
 build-provider:
@@ -64,7 +67,20 @@ package.push:
 .PHONY: save-artifacts
 save-artifacts:
 	@$(INFO) saving artifacts
-	@mkdir -p _output/air-gapped
-	@docker save $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) > _output/air-gapped/provider-image.tar
-	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/air-gapped/
+	@mkdir -p _output/artifacts
+	@docker save $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) > _output/artifacts/provider-image-$(TARGETARCH).tar
+	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/artifacts/
 	@$(OK) artifacts saved
+
+.PHONY: debug-provider
+debug-provider:
+	@$(INFO) running Crossplane provider in debug mode
+	@dlv exec bin/$(TARGETOS)_$(TARGETARCH)/provider -- --terraform-version=$(TERRAFORM_VERSION) --debug
+	@$(OK) Provider debug mode active
+
+# Launch provider with the required flag
+.PHONY: run-provider
+run-provider:
+	@$(INFO) running Crossplane provider with Terraform version $(TERRAFORM_VERSION)
+	@bin/$(TARGETOS)_$(TARGETARCH)/provider --terraform-version=$(TERRAFORM_VERSION)
+	@$(OK) Provider is running

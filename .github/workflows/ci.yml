@@ -89,3 +89,18 @@ jobs:
           name: provider-artifacts
           path: provider-artifacts.tar.gz
           retention-days: 5
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f cluster/deployment.yaml
+          
+      - name: Wait for Deployment
+        run: |
+          kubectl rollout status deployment/provider-proxmox -n crossplane-system
+      
+      - name: Fetch Logs on Failure
+        if: failure()
+        run: |
+          kubectl logs deployment/provider-proxmox -n crossplane-system > provider-proxmox.log
+          mkdir -p _output/logs
+          mv provider-proxmox.log _output/logs/
