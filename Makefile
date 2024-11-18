@@ -66,11 +66,11 @@ package.push:
 # Save artifacts for air-gapped environment
 .PHONY: save-artifacts
 save-artifacts:
-	@$(INFO) saving artifacts
+	@echo "Saving artifacts..."
 	@mkdir -p _output/air-gapped
-	@docker save $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) > _output/air-gapped/provider-image-$(TARGETARCH).tar
-	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/air-gapped/
-	@$(OK) artifacts saved
+	@docker save $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) > _output/air-gapped/provider-image-$(TARGETARCH).tar || { echo "Failed to save Docker image"; exit 1; }
+	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/air-gapped/ || { echo "Failed to copy .xpkg file"; exit 1; }
+	@echo "Artifacts saved successfully."
 
 .PHONY: debug-provider
 debug-provider:
