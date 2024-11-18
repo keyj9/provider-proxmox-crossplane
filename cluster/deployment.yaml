@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: provider-proxmox
+  namespace: crossplane-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: provider-proxmox
+  template:
+    metadata:
+      labels:
+        app: provider-proxmox
+    spec:
+      containers:
+        - name: package-runtime
+          image: ghcr.io/keyj9/provider-proxmox-crossplane/provider-proxmox-crossplane-amd64:v0.1.0
+          args:
+            - "--terraform-version=1.3.5"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
