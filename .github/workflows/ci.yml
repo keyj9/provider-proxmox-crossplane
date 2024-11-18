@@ -82,6 +82,14 @@ jobs:
 
           # Archive the artifacts for uploading
           cd _output && tar czf ../provider-artifacts.tar.gz air-gapped/
+        shell: /usr/bin/bash -e {0}
+        env:
+          PROJECT_NAME: provider-proxmox-crossplane
+          REGISTRY: ghcr.io/keyj9/provider-proxmox-crossplane
+          VERSION: v1.0.0
+          TARGETOS: linux
+          TARGETARCH: amd64
+          PACKAGE_ROOT: package
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
@@ -104,3 +112,14 @@ jobs:
           kubectl logs deployment/provider-proxmox -n crossplane-system > provider-proxmox.log
           mkdir -p _output/logs
           mv provider-proxmox.log _output/logs/
+
+      - name: Set up Kubeconfig
+        env:
+          KUBECONFIG_DATA: ${{ secrets.KUBECONFIG }}
+        run: |
+          echo "$KUBECONFIG_DATA" > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Run kubectl logs
+        run: |
+          kubectl logs deployment/provider-proxmox -n crossplane-system > provider-proxmox.log
