@@ -17,7 +17,9 @@ jobs:
 
     env:
       PROJECT_NAME: provider-proxmox-crossplane
-      REGISTRY: ghcr.io/${{ github.repository }}
+      REGISTRY: ghcr.io/keyj9
+      CONTROLLER_IMAGE: ghcr.io/keyj9/provider-proxmox-crossplane/provider-proxmox-crossplane-amd64
+      PACKAGE_IMAGE: ghcr.io/keyj9/provider-proxmox-crossplane
       VERSION: v1.0.0
       TARGETOS: linux
       TARGETARCH: ${{ matrix.arch }}
@@ -80,7 +82,9 @@ jobs:
         shell: /usr/bin/bash -e {0}
         env:
           PROJECT_NAME: provider-proxmox-crossplane
-          REGISTRY: ghcr.io/keyj9/provider-proxmox-crossplane
+          REGISTRY: ghcr.io/keyj9
+          CONTROLLER_IMAGE: ghcr.io/keyj9/provider-proxmox-crossplane/provider-proxmox-crossplane-amd64
+          PACKAGE_IMAGE: ghcr.io/keyj9/provider-proxmox-crossplane
           VERSION: v1.0.0
           TARGETOS: linux
           TARGETARCH: amd64
