@@ -34,20 +34,12 @@ build-terraform-provider:
 
 # Build and publish Docker image
 .PHONY: image.build
-image.build:
-	@echo "Building provider image..."
-	docker buildx build \
-		--platform linux/amd64 \
-		-t ghcr.io/keyj9/provider-proxmox-crossplane/provider-proxmox-crossplane-amd64:v0.1.0 \
-		-f cluster/images/provider-proxmox-crossplane/Dockerfile \
-		.
-	@echo "Provider image built successfully."
+image.build: build-provider build-terraform-provider
+	@$(MAKE) -C cluster/images/provider-proxmox-crossplane img.build
 
 .PHONY: image.publish
 image.publish:
-	@echo "Publishing provider image..."
-	docker push ghcr.io/keyj9/provider-proxmox-crossplane/provider-proxmox-crossplane-amd64:v0.1.0
-	@echo "Provider image published successfully."
+	@$(MAKE) -C cluster/images/provider-proxmox-crossplane img.publish
 
 # Package preparation and building
 .PHONY: package.prepare
