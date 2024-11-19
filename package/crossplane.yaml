@@ -5,6 +5,10 @@ metadata:
 spec:
   controller:
     image: ${REGISTRY_IMAGE}:${VERSION}
+    args:
+      - "--terraform-version=1.3.5"
+      - "--terraform-provider-source=registry.terraform.io/telmate/proxmox"
+      - "--terraform-provider-version=1.0.0"
   package: ${REGISTRY_IMAGE}:${VERSION}
   ignorePaths:
     - .github
