@@ -1,63 +1,97 @@
-name: Build and Publish
+name: Build and Push Multi-arch Artifacts
 
 on:
   push:
-    branches:
-      - ['main', 'master', 'release-*', 'feature-terraform-provider-submodule']
+    branches: ['main', 'master', 'release-*', 'feature-terraform-provider-submodule']
+    tags: ['v*']
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64, arm64]
+        arch: [amd64]
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      PROJECT_NAME: provider-proxmox-crossplane
+      REGISTRY: ghcr.io/keyj9
+      CONTROLLER_IMAGE: ghcr.io/keyj9/provider-proxmox-crossplane-controller
+      PACKAGE_IMAGE: ghcr.io/keyj9/provider-proxmox-crossplane-package
+      VERSION: v1.0.0
+      TARGETOS: linux
+      TARGETARCH: ${{ matrix.arch }}
+      PACKAGE_ROOT: package
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: true
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      - name: Install Crossplane CLI
+        run: |
+          curl -sL https://raw.githubusercontent.com/crossplane/crossplane/master/install.sh | sh
+          sudo mv crossplane /usr/local/bin/
+          chmod +x /usr/local/bin/crossplane
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v2
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up environment variables
+      - name: Prepare Package Structure
         run: |
-          echo "PROJECT_NAME=provider-proxmox-crossplane" >> $GITHUB_ENV
-          echo "REGISTRY=ghcr.io/keyj9" >> $GITHUB_ENV
-          echo "CONTROLLER_IMAGE=$REGISTRY/$PROJECT_NAME-controller-${{ matrix.arch }}" >> $GITHUB_ENV
-          echo "PACKAGE_IMAGE=$REGISTRY/$PROJECT_NAME-package-${{ matrix.arch }}" >> $GITHUB_ENV
-          echo "VERSION=v1.0.0" >> $GITHUB_ENV
-          echo "TARGETOS=linux" >> $GITHUB_ENV
-          echo "TARGETARCH=${{ matrix.arch }}" >> $GITHUB_ENV
-          echo "PACKAGE_ROOT=package" >> $GITHUB_ENV
+          make package.prepare
+          echo "Contents of package/:"
+          ls -la package/
+          echo "Contents of package/crds/:"
+          ls -la package/crds/
 
-      - name: Build and Push Controller Image
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Controller Image
         run: |
-          make image.build
-          make image.publish
+          make image.build CONTROLLER=true
+          docker tag ${CONTROLLER_IMAGE}:${VERSION} ${CONTROLLER_IMAGE}:latest
 
-      - name: Build and Push Package
+      - name: Push Controller Image
+        run: |
+          docker push ${CONTROLLER_IMAGE}:${VERSION}
+          docker push ${CONTROLLER_IMAGE}:latest
+
+      - name: Build Package Image
         run: |
           make package
-          make package.publish
+          docker tag ${PACKAGE_IMAGE}:${VERSION} ${PACKAGE_IMAGE}:latest
+
+      - name: Push Package Image
+        run: |
+          make package.push
 
       - name: Save Artifacts for Air-gapped Environment
-        shell: bash
         run: |
-          # Create the directory if it doesn't exist
-          mkdir -p _output/air-gapped
-          # Save controller image
-          docker save ${CONTROLLER_IMAGE}:${VERSION} > _output/air-gapped/controller-image-${TARGETARCH}.tar || { echo "Failed to save controller image"; exit 1; }
-          # Save package image
-          docker save ${PACKAGE_IMAGE}:${VERSION} > _output/air-gapped/package-image-${TARGETARCH}.tar || { echo "Failed to save package image"; exit 1; }
-          # Tar each image separately
-          cd _output/air-gapped
-          tar czf ../../controller-artifacts.tar.gz controller-image-${TARGETARCH}.tar
-          tar czf ../../package-artifacts.tar.gz package-image-${TARGETARCH}.tar
+          make save-artifacts
+          echo "Contents of _output/air-gapped/:"
+          ls -la _output/air-gapped/
+          cd _output && tar czf ../provider-artifacts.tar.gz air-gapped/
+        shell: /usr/bin/bash -e {0}
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: provider-artifacts
+          path: provider-artifacts.tar.gz
+          retention-days: 5

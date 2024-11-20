@@ -1,18 +1,16 @@
+# Final Stage
 FROM alpine:3.20.3
 
-ARG TARGETOS
-ARG TARGETARCH
+# Create necessary directories for air-gapped setup
+RUN mkdir -p /terraform.d/plugins/localhost/telmate/proxmox/1.0.0/linux_amd64/
 
-# Create necessary directories
-RUN mkdir -p /terraform.d/plugins/localhost/telmate/proxmox/1.0.0/${TARGETOS}_${TARGETARCH}
+# Copy binaries with proper permissions
+COPY --from=crossplane-builder /provider /usr/local/bin/provider
+COPY --from=terraform-builder /workspace/terraform-provider-proxmox/bin/terraform-provider-proxmox \
+    /terraform.d/plugins/localhost/telmate/proxmox/1.0.0/linux_amd64/
 
-# Copy binaries
-COPY provider /usr/local/bin/provider
-COPY terraform.d/ /terraform.d/
-
-# Set permissions
 RUN chmod +x /usr/local/bin/provider && \
-    chmod +x /terraform.d/plugins/localhost/telmate/proxmox/1.0.0/${TARGETOS}_${TARGETARCH}/terraform-provider-proxmox
+    chmod +x /terraform.d/plugins/localhost/telmate/proxmox/1.0.0/linux_amd64/terraform-provider-proxmox
 
 # Air-gapped environment configuration
 ENV TERRAFORM_PROVIDER_PATH=/terraform.d/plugins
