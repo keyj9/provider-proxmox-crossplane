@@ -25,9 +25,21 @@ GO_STATIC_PACKAGES = $(GO_PROJECT)/cmd/provider
 CLEAN_DIRS += bin/ vendor/ $(OUTPUT_DIR) $(PACKAGE_ROOT)/_output $(PACKAGE_ROOT)/temp
 
 #====================================================================================
-# Core Targets
+# Preparation Targets
 #====================================================================================
 
+.PHONY: package.prepare
+package.prepare:
+	@$(INFO) preparing package structure
+	@mkdir -p $(PACKAGE_ROOT)/crds
+	@$(OK) package structure prepared
+
+# Extend generate target from build system
+generate.run: package.prepare
+
+#====================================================================================
+# Core Targets
+#====================================================================================
 .PHONY: submodules
 submodules:
 	@$(INFO) updating git submodules
@@ -48,8 +60,8 @@ vendor: vendor.prepare
 	@go mod vendor
 	@go mod verify
 	@$(OK) dependencies vendored
-
 .PHONY: build-provider
+
 build-provider: vendor generate
 	@$(INFO) building Crossplane provider binary
 	@mkdir -p bin/$(TARGETOS)_$(TARGETARCH)
