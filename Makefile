@@ -7,9 +7,9 @@ OUTPUT_DIR ?= _output
 TARGETOS ?= linux
 TARGETARCH ?= amd64
 
-
+# Set the controller image name
+CONTROLLER_IMAGE ?= $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH)
 # Adjust image names
-CONTROLLER_IMAGE ?= $(REGISTRY)/provider-proxmox-crossplane-controller-$(TARGETARCH)
 PACKAGE_IMAGE ?= $(REGISTRY)/provider-proxmox-crossplane-package-$(TARGETARCH)
 
 # Include essential build tools

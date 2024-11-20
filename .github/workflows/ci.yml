@@ -76,9 +76,11 @@ jobs:
 
       - name: Save Artifacts for Air-gapped Environment
         run: |
+          # Create the directory if it doesn't exist
+          mkdir -p _output/air-gapped
           # Save controller image
-          docker save ${CONTROLLER_IMAGE}:${VERSION} > _output/air-gapped/controller-image-${TARGETARCH}.tar || { echo "Failed to save controller image"; exit 1; }
-          # Save package image (XPKG)
+            docker save ${CONTROLLER_IMAGE}:${VERSION} > _output/air-gapped/controller-image-${TARGETARCH}.tar || { echo "Failed to save controller image"; exit 1; }
+            # Save package image (XPKG)
             docker save ${PACKAGE_IMAGE}:${VERSION} > _output/air-gapped/package-image-${TARGETARCH}.tar || { echo "Failed to save package image"; exit 1; }
             # Tar each image separately
             cd _output/air-gapped
@@ -90,7 +92,7 @@ jobs:
         env:
           PROJECT_NAME: provider-proxmox-crossplane
           REGISTRY: ghcr.io/keyj9
-          CONTROLLER_IMAGE: ghcr.io/keyj9/provider-proxmox-crossplane/provider-proxmox-crossplane-amd64
+          CONTROLLER_IMAGE: ghcr.io/keyj9/provider-proxmox-crossplane-amd64
           PACKAGE_IMAGE: ghcr.io/keyj9/provider-proxmox-crossplane
           VERSION: v1.0.0
           TARGETOS: linux
