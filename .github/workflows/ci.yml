@@ -1,108 +1,63 @@
-name: Build and Push Multi-arch Artifacts
+name: Build and Publish
 
 on:
   push:
-    branches: ['main', 'master', 'release-*', 'feature-terraform-provider-submodule']
-    tags: ['v*']
+    branches:
+      - main
 
 jobs:
-  build-and-push:
+  build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64]
-    permissions:
-      contents: read
-      packages: write
-
-    # Environment variables 
-    env:
-      PROJECT_NAME: provider-proxmox-crossplane
-      REGISTRY: ghcr.io/keyj9
-      CONTROLLER_IMAGE: ghcr.io/keyj9/provider-proxmox-crossplane-controller-amd64
-      PACKAGE_IMAGE: ghcr.io/keyj9/provider-proxmox-crossplane-package-amd64
-      VERSION: v1.0.0
-      TARGETOS: linux
-      TARGETARCH: ${{ matrix.arch }}
-      PACKAGE_ROOT: package
-
+        arch: [amd64, arm64]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: true
-          fetch-depth: 0
+      - uses: actions/checkout@v3
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.21'
-          cache: true
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
 
-      - name: Install Crossplane CLI
-        run: |
-          curl -sL https://raw.githubusercontent.com/crossplane/crossplane/master/install.sh | sh
-          sudo mv crossplane /usr/local/bin/
-          chmod +x /usr/local/bin/crossplane
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Prepare Package Structure
+      - name: Set up environment variables
         run: |
-          make package.prepare
-          echo "Contents of package/:"
-          ls -la package/
-          echo "Contents of package/crds/:"
-          ls -la package/crds/
+          echo "PROJECT_NAME=provider-proxmox-crossplane" >> $GITHUB_ENV
+          echo "REGISTRY=ghcr.io/keyj9" >> $GITHUB_ENV
+          echo "CONTROLLER_IMAGE=$REGISTRY/$PROJECT_NAME-controller-${{ matrix.arch }}" >> $GITHUB_ENV
+          echo "PACKAGE_IMAGE=$REGISTRY/$PROJECT_NAME-package-${{ matrix.arch }}" >> $GITHUB_ENV
+          echo "VERSION=v1.0.0" >> $GITHUB_ENV
+          echo "TARGETOS=linux" >> $GITHUB_ENV
+          echo "TARGETARCH=${{ matrix.arch }}" >> $GITHUB_ENV
+          echo "PACKAGE_ROOT=package" >> $GITHUB_ENV
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and Push
+      - name: Build and Push Controller Image
         run: |
           make image.build
           make image.publish
+
+      - name: Build and Push Package
+        run: |
           make package
-          echo "Package contents:"
-          ls -la package/_output/
-          echo "Image details:"
-          docker images | grep $PROJECT_NAME
-          make package.push
+          make package.publish
 
       - name: Save Artifacts for Air-gapped Environment
+        shell: bash
         run: |
           # Create the directory if it doesn't exist
           mkdir -p _output/air-gapped
           # Save controller image
-            docker save ${CONTROLLER_IMAGE}:${VERSION} > _output/air-gapped/controller-image-${TARGETARCH}.tar || { echo "Failed to save controller image"; exit 1; }
-            # Save package image (XPKG)
-            docker save ${PACKAGE_IMAGE}:${VERSION} > _output/air-gapped/package-image-${TARGETARCH}.tar || { echo "Failed to save package image"; exit 1; }
-            # Tar each image separately
-            cd _output/air-gapped
-            tar czf ../../controller-artifacts.tar.gz controller-image-${TARGETARCH}.tar
-            tar czf ../../package-artifacts.tar.gz package-image-${TARGETARCH}.tar
-          shell: /usr/bin/bash -e {0}
-        
-
-        env:
-          PROJECT_NAME: provider-proxmox-crossplane
-          REGISTRY: ghcr.io/keyj9
-          CONTROLLER_IMAGE: ghcr.io/keyj9/provider-proxmox-crossplane-amd64
-          PACKAGE_IMAGE: ghcr.io/keyj9/provider-proxmox-crossplane-amd64
-
-          VERSION: v1.0.0
-          TARGETOS: linux
-          TARGETARCH: amd64
-          PACKAGE_ROOT: package
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: provider-artifacts
-          path: provider-artifacts.tar.gz
-          retention-days: 5
+          docker save ${CONTROLLER_IMAGE}:${VERSION} > _output/air-gapped/controller-image-${TARGETARCH}.tar || { echo "Failed to save controller image"; exit 1; }
+          # Save package image
+          docker save ${PACKAGE_IMAGE}:${VERSION} > _output/air-gapped/package-image-${TARGETARCH}.tar || { echo "Failed to save package image"; exit 1; }
+          # Tar each image separately
+          cd _output/air-gapped
+          tar czf ../../controller-artifacts.tar.gz controller-image-${TARGETARCH}.tar
+          tar czf ../../package-artifacts.tar.gz package-image-${TARGETARCH}.tar

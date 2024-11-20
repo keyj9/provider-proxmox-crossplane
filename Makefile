@@ -2,15 +2,16 @@
 PROJECT_NAME ?= provider-proxmox-crossplane
 PROJECT_REPO ?= github.com/joekky/$(PROJECT_NAME)
 REGISTRY ?= ghcr.io/joekky
-VERSION ?= $(shell git describe --tags --always --dirty)
+VERSION ?= v1.0.0
 OUTPUT_DIR ?= _output
 TARGETOS ?= linux
 TARGETARCH ?= amd64
+PACKAGE_ROOT ?= package
 
 # Set the controller image name
-CONTROLLER_IMAGE ?= $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH)
-# Adjust image names
-PACKAGE_IMAGE ?= $(REGISTRY)/provider-proxmox-crossplane-package-$(TARGETARCH)
+CONTROLLER_IMAGE ?= $(REGISTRY)/$(PROJECT_NAME)-controller-$(TARGETARCH)
+# Set the package image name
+PACKAGE_IMAGE ?= $(REGISTRY)/$(PROJECT_NAME)-package-$(TARGETARCH)
 
 # Include essential build tools
 -include build/makelib/common.mk
@@ -30,14 +31,15 @@ build-provider:
 		go build -mod=vendor -o bin/$(TARGETOS)_$(TARGETARCH)/provider ./cmd/provider
 	@$(OK) Crossplane provider built
 
+# Build Terraform provider binary
 .PHONY: build-terraform-provider
 build-terraform-provider:
 	@$(INFO) building Terraform Proxmox provider
 	@cd third_party/terraform-provider-proxmox && \
-		CGO_ENABLED=0 GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) make build
+		CGO_ENABLED=0 GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) go build -o terraform-provider-proxmox
+	@mkdir -p bin/$(TARGETOS)_$(TARGETARCH)
+	@cp third_party/terraform-provider-proxmox/terraform-provider-proxmox bin/$(TARGETOS)_$(TARGETARCH)/
 	@$(OK) Terraform Proxmox provider built
-
-
 
 # Build and publish Docker image
 .PHONY: image.build
@@ -58,16 +60,16 @@ package.prepare:
 .PHONY: package
 package: package.prepare
 	@$(INFO) building provider package
-	@$(MAKE) -C cluster/images/provider-proxmox-crossplane package.$(TARGETARCH) PACKAGE_ROOT=$(abspath package)
+	@$(MAKE) -C cluster/images/provider-proxmox-crossplane package.$(TARGETARCH) PACKAGE_ROOT=$(abspath $(PACKAGE_ROOT))
 	@$(OK) provider package built
 
 # Push Crossplane package
-.PHONY: package.push
-package.push:
+.PHONY: package.publish
+package.publish:
 	@$(INFO) pushing package to registry
 	@crossplane xpkg push \
 		-f $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg \
-		$(REGISTRY)/$(PROJECT_NAME):$(VERSION)-$(TARGETARCH)
+		$(PACKAGE_IMAGE):$(VERSION)
 	@$(OK) package pushed
 
 # Save artifacts for air-gapped environment
@@ -75,17 +77,18 @@ package.push:
 save-artifacts:
 	@echo "Saving artifacts..."
 	@mkdir -p _output/air-gapped
-	@docker save $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) > _output/air-gapped/provider-image-$(TARGETARCH).tar || { echo "Failed to save Docker image"; exit 1; }
-	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/air-gapped/ || { echo "Failed to copy .xpkg file"; exit 1; }
+	@docker save $(CONTROLLER_IMAGE):$(VERSION) > _output/air-gapped/controller-image-$(TARGETARCH).tar || { echo "Failed to save Docker image"; exit 1; }
+	@cp $(PACKAGE_ROOT)/_output/$(PROJECT_NAME)-$(TARGETARCH).xpkg _output/air-gapped/package-$(TARGETARCH).xpkg || { echo "Failed to copy .xpkg file"; exit 1; }
 	@echo "Artifacts saved successfully."
 
+# Debug provider
 .PHONY: debug-provider
 debug-provider:
 	@$(INFO) running Crossplane provider in debug mode
 	@dlv exec bin/$(TARGETOS)_$(TARGETARCH)/provider -- --terraform-version=$(TERRAFORM_VERSION) --debug
 	@$(OK) Provider debug mode active
 
-# Launch provider with the required flag
+# Run provider
 .PHONY: run-provider
 run-provider:
 	@$(INFO) running Crossplane provider with Terraform version $(TERRAFORM_VERSION)

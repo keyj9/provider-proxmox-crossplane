@@ -1,56 +1,18 @@
-# Build Stage - Build the Crossplane Provider
-FROM --platform=$BUILDPLATFORM golang:1.21-alpine3.17 AS crossplane-builder
-
-ARG TARGETOS
-ARG TARGETARCH
-
-# Install necessary packages
-RUN apk --no-cache add make git
-
-# Set the working directory
-WORKDIR /workspace
-
-# Copy the Crossplane provider source code
-COPY cmd/ /workspace/cmd/
-COPY apis/ /workspace/apis/
-COPY internal/ /workspace/internal/
-COPY config/ /workspace/config/
-COPY go.mod go.sum /workspace/
-
-# Build the Crossplane provider
-RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /provider ./cmd/provider
-
-# Build Stage - Build the Terraform Proxmox Provider
-FROM --platform=$BUILDPLATFORM golang:1.21-alpine3.17 AS terraform-builder
-
-ARG TARGETOS
-ARG TARGETARCH
-
-# Install necessary packages
-RUN apk --no-cache add make git
-
-# Set the working directory
-WORKDIR /workspace
-
-# Copy the Terraform provider source code
-COPY third_party/terraform-provider-proxmox/ /workspace/
-
-# Build the Terraform provider
-RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -o terraform-provider-proxmox
-
-# Final Stage
 FROM alpine:3.20.3
 
+ARG TARGETOS
+ARG TARGETARCH
+
 # Create necessary directories
-RUN mkdir -p /terraform.d/plugins/localhost/telmate/proxmox/1.0.0/$TARGETOS_$TARGETARCH
+RUN mkdir -p /terraform.d/plugins/localhost/telmate/proxmox/1.0.0/${TARGETOS}_${TARGETARCH}
 
 # Copy binaries
-COPY --from=crossplane-builder /provider /usr/local/bin/provider
-COPY --from=terraform-builder /workspace/terraform-provider-proxmox /terraform.d/plugins/localhost/telmate/proxmox/1.0.0/$TARGETOS_$TARGETARCH/
+COPY provider /usr/local/bin/provider
+COPY terraform.d/ /terraform.d/
 
 # Set permissions
 RUN chmod +x /usr/local/bin/provider && \
-    chmod +x /terraform.d/plugins/localhost/telmate/proxmox/1.0.0/$TARGETOS_$TARGETARCH/terraform-provider-proxmox
+    chmod +x /terraform.d/plugins/localhost/telmate/proxmox/1.0.0/${TARGETOS}_${TARGETARCH}/terraform-provider-proxmox
 
 # Air-gapped environment configuration
 ENV TERRAFORM_PROVIDER_PATH=/terraform.d/plugins
