@@ -93,7 +93,8 @@ jobs:
           PROJECT_NAME: provider-proxmox-crossplane
           REGISTRY: ghcr.io/keyj9
           CONTROLLER_IMAGE: ghcr.io/keyj9/provider-proxmox-crossplane-amd64
-          PACKAGE_IMAGE: ghcr.io/keyj9/provider-proxmox-crossplane
+          PACKAGE_IMAGE: ghcr.io/keyj9/provider-proxmox-crossplane-amd64
+
           VERSION: v1.0.0
           TARGETOS: linux
           TARGETARCH: amd64
