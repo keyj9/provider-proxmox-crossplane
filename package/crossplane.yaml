@@ -4,13 +4,14 @@ metadata:
   name: provider-proxmox-crossplane
 spec:
   controller:
-    image: ghcr.io/keyj9/provider-proxmox-crossplane-controller:v1.0.0
+    image: ${REGISTRY_IMAGE}:${VERSION}
     args:
       - "--debug"
       - "--terraform-version=1.3.5"
       - "--terraform-provider-source=/terraform.d/plugins/localhost/telmate/proxmox"
       - "--terraform-provider-version=1.0.0"
-  package: ghcr.io/keyj9/provider-proxmox-crossplane-package:v1.0.0
+  crossplane:
+    version: ">=v1.0.0"
   ignorePaths:
     - .github
     - examples
