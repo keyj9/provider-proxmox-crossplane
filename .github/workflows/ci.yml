@@ -1,4 +1,3 @@
-# CI.yaml
 name: Build and Push Multi-arch Artifacts
 
 on:
@@ -39,6 +38,13 @@ jobs:
         with:
           go-version: '1.21'
           cache: true
+
+      - name: Clean and Vendor Dependencies
+        run: |
+          rm -rf vendor/
+          go mod tidy
+          go mod vendor
+          go mod verify
 
       - name: Install Crossplane CLI
         run: |
