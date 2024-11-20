@@ -94,3 +94,4 @@ run-provider:
 	@$(INFO) running Crossplane provider with Terraform version $(TERRAFORM_VERSION)
 	@bin/$(TARGETOS)_$(TARGETARCH)/provider --terraform-version=$(TERRAFORM_VERSION)
 	@$(OK) Provider is running
+#
