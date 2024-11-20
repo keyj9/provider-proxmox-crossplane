@@ -1,10 +1,11 @@
 include ../../../build/makelib/common.mk
 include ../../../build/makelib/imagelight.mk
 
-IMAGE = $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH)
+IMAGE = $(REGISTRY)/provider-proxmox-crossplane-controller-$(TARGETARCH)
 PLATFORMS ?= linux_amd64 linux_arm64
 TARGETOS ?= linux
 TARGETARCH ?= amd64
+
 
 .PHONY: img.build
 img.build:

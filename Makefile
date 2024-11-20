@@ -7,6 +7,11 @@ OUTPUT_DIR ?= _output
 TARGETOS ?= linux
 TARGETARCH ?= amd64
 
+
+# Adjust image names
+CONTROLLER_IMAGE ?= $(REGISTRY)/provider-proxmox-crossplane-controller-$(TARGETARCH)
+PACKAGE_IMAGE ?= $(REGISTRY)/provider-proxmox-crossplane-package-$(TARGETARCH)
+
 # Include essential build tools
 -include build/makelib/common.mk
 -include build/makelib/output.mk
@@ -31,6 +36,8 @@ build-terraform-provider:
 	@cd third_party/terraform-provider-proxmox && \
 		CGO_ENABLED=0 GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) make build
 	@$(OK) Terraform Proxmox provider built
+
+
 
 # Build and publish Docker image
 .PHONY: image.build

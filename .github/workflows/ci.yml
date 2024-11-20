@@ -15,11 +15,12 @@ jobs:
       contents: read
       packages: write
 
+    # Environment variables 
     env:
       PROJECT_NAME: provider-proxmox-crossplane
       REGISTRY: ghcr.io/keyj9
-      CONTROLLER_IMAGE: ghcr.io/keyj9/provider-proxmox-crossplane/provider-proxmox-crossplane-amd64
-      PACKAGE_IMAGE: ghcr.io/keyj9/provider-proxmox-crossplane
+      CONTROLLER_IMAGE: ghcr.io/keyj9/provider-proxmox-crossplane-controller-amd64
+      PACKAGE_IMAGE: ghcr.io/keyj9/provider-proxmox-crossplane-package-amd64
       VERSION: v1.0.0
       TARGETOS: linux
       TARGETARCH: ${{ matrix.arch }}
@@ -75,11 +76,17 @@ jobs:
 
       - name: Save Artifacts for Air-gapped Environment
         run: |
-          make save-artifacts
-          echo "Contents of _output/air-gapped/:"
-          ls -la _output/air-gapped/
-          cd _output && tar czf ../provider-artifacts.tar.gz air-gapped/
-        shell: /usr/bin/bash -e {0}
+          # Save controller image
+          docker save ${CONTROLLER_IMAGE}:${VERSION} > _output/air-gapped/controller-image-${TARGETARCH}.tar || { echo "Failed to save controller image"; exit 1; }
+          # Save package image (XPKG)
+            docker save ${PACKAGE_IMAGE}:${VERSION} > _output/air-gapped/package-image-${TARGETARCH}.tar || { echo "Failed to save package image"; exit 1; }
+            # Tar each image separately
+            cd _output/air-gapped
+            tar czf ../../controller-artifacts.tar.gz controller-image-${TARGETARCH}.tar
+            tar czf ../../package-artifacts.tar.gz package-image-${TARGETARCH}.tar
+          shell: /usr/bin/bash -e {0}
+        
+
         env:
           PROJECT_NAME: provider-proxmox-crossplane
           REGISTRY: ghcr.io/keyj9
