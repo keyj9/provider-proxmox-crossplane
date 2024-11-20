@@ -37,7 +37,9 @@ build-terraform-provider:
 .PHONY: image.build
 image.build:
 	@$(INFO) building Docker image
-	@mkdir -p cluster/images/provider-proxmox-crossplane
+	@mkdir -p build/context
+	# Copy necessary files into build context
+	@cp -R cmd/ apis/ internal/ config/ go.mod go.sum third_party/ build/context/
 	@docker buildx build \
 		--platform $(TARGETOS)/$(TARGETARCH) \
 		--build-arg TARGETOS=$(TARGETOS) \
@@ -45,7 +47,8 @@ image.build:
 		--build-arg CONTROLLER=$(CONTROLLER) \
 		-t $(REGISTRY)/$(PROJECT_NAME)-$(TARGETARCH):$(VERSION) \
 		--load \
-		cluster/images/provider-proxmox-crossplane || $(FAIL)
+		-f cluster/images/provider-proxmox-crossplane/Dockerfile \
+		build/context || $(FAIL)
 	@$(OK) Docker image built
 
 .PHONY: image.publish
