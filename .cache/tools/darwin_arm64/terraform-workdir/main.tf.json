@@ -1,1 +1,0 @@
-{"terraform":[{"required_providers":[{"provider":{"source":"registry.terraform.io/joekky/proxmox","version":"main"}}]}]}

@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+
 package controller
 
 import (
@@ -10,12 +11,13 @@ import (
 	"github.com/crossplane/upjet/pkg/controller"
 
 	initdisk "github.com/joekky/provider-proxmox-crossplane/internal/controller/cloud/initdisk"
-	disk "github.com/joekky/provider-proxmox-crossplane/internal/controller/lxc/disk"
-	providerconfig "github.com/joekky/provider-proxmox-crossplane/internal/controller/providerconfig"
-	lxc "github.com/joekky/provider-proxmox-crossplane/internal/controller/proxmox/lxc"
-	pool "github.com/joekky/provider-proxmox-crossplane/internal/controller/proxmox/pool"
-	iso "github.com/joekky/provider-proxmox-crossplane/internal/controller/storage/iso"
-	qemu "github.com/joekky/provider-proxmox-crossplane/internal/controller/vm/qemu"
+disk "github.com/joekky/provider-proxmox-crossplane/internal/controller/lxc/disk"
+providerconfig "github.com/joekky/provider-proxmox-crossplane/internal/controller/providerconfig"
+lxc "github.com/joekky/provider-proxmox-crossplane/internal/controller/proxmox/lxc"
+pool "github.com/joekky/provider-proxmox-crossplane/internal/controller/proxmox/pool"
+iso "github.com/joekky/provider-proxmox-crossplane/internal/controller/storage/iso"
+qemu "github.com/joekky/provider-proxmox-crossplane/internal/controller/vm/qemu"
+
 )
 
 // Setup creates all controllers with the supplied logger and adds them to
